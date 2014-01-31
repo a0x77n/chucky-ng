@@ -23,7 +23,7 @@ awk -v s=$SYMBOL '{
 	printf("symbols = queryNodeIndex(\047%s AND code:%s AND type:Symbol\047).taint().toList();",$1,s)
 	printf("queryNodeIndex(\047%s AND type:Condition\047).as(\047condition\047).out(\047USE\047).retain(symbols).back(\047condition\047).subTrees()\n",$1)
 }' | \
-python/query.py -a functionId code | \
+traversal.py -a functionId code | \
 awk 'BEGIN {FS="\t"; OFS="\t"} { split($2,a,":"); split($3,b,":"); print a[2] "\t" b[2] }' | \
 demux.py --outputDir $FUNCTIONS_DIR
 

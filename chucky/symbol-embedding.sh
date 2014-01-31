@@ -15,7 +15,7 @@ echo "type:Symbol AND code:$SYMBOL" | \
 lookup.py --attributes functionId | \
 cut -f2 | \
 awk '{printf("queryNodeIndex( \047%s\047 ).filter{ it.type == \047IdentifierDeclType\047 || it.type == \047ParameterType\047 || ( it.type == \047Identifier\047 && it.in.has( \047type\047, \047CallExpression\047 ) ) }\n", $1); }' | \
-python/query.py -a functionId code | \
+traversal.py -a functionId code | \
 awk 'BEGIN { FS=OFS="\t" } { split($2,a,":"); split($3,b,":"); print a[2], b[2] }' | \
 demux.py --outputDir $BAG_OF_WORDS_DIR
 
