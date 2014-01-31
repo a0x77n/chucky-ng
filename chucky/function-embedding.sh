@@ -47,8 +47,7 @@ for f in $FILES; do
 	(( KEY += 1 ))
 	ID=$(cat $FUNCTIONS_DIR/TOC | sed -n "${KEY}p")
 	ARGS=$(printf 'queryNodeIndex(\047functionId:%s AND code:%s AND type:Symbol\047).hasArguments().dedup()\n' "$ID" "$SYMBOL" | \
-	
-	python/query.py --attribute code | \
+	traversal.py --attribute code | \
 	awk '{ split($2,a,":"); print a[2] }')
 
 	for arg in $ARGS; do
