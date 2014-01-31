@@ -1,0 +1,29 @@
+#!/bin/bash
+
+source chucky/chucky.conf
+
+if [ ! -f "$NEIGHBORS_FILE" ]; then
+    printf 'No neighbors file found.\n'
+    printf 'Run chucky/neighborhood-detection.sh first.\n'
+    printf 'Exiting now.\n'
+    exit 1
+fi
+
+if [ -f "$FUNCTIONS_DIR" ]; then
+    printf 'Function embedding already exists.\n'
+    printf 'Exiting now.\n'
+    exit 1
+fi
+
+printf 'Source/Sink symbol is set to %s.\n' "$SYMBOL"
+printf 'Neighbors file is set to %s.\n' "$NEIGHBORS_FILE"
+printf 'Output directory is set to %s.\n' "$FUNCTIONS_DIR"
+
+cat $NEIGHBORS_FILE | \
+awk -v s=$SYMBOL '{
+	printf("symbols = queryNodeIndex(\047%s AND code:%s AND type:Symbol\047).taint().toList();",$1,s)
+	printf("queryNodeIndex(\047%s AND type:Condition\047).as(\047condition\047).out(\047USE\047).retain(symbols).back(\047condition\047).subTrees()\n",$1)
+}' | \
+chucky/query.py -a functionId code | \
+awk 'BEGIN {FS="\t"; OFS="\t"} { split($2,a,":"); split($3,b,":"); print a[2] "\t" b[2] }' | \
+demux.py --outputDir $FUNCTIONS_DIR
