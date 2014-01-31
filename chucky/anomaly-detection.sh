@@ -1,6 +1,7 @@
 #!/bin/bash
 
 source chucky/chucky.conf
+check_config
 
 #
 # Anomaly detection (print anomaly score for each neighbor function)

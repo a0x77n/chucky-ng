@@ -1,6 +1,7 @@
 #!/bin/bash
 
 source chucky/chucky.conf
+check_config
 
 if [ -d "$BAG_OF_WORDS_DIR" ]; then
     printf 'Embedding already exists.\n'

@@ -1,6 +1,7 @@
 #!/bin/bash
 
 source chucky/chucky.conf
+check_config
 
 if [ ! -f "$NEIGHBORS_FILE" ]; then
     printf 'No neighbors file found.\n'
