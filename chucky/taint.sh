@@ -23,6 +23,6 @@ cat $NEIGHBORS_FILE | \
 awk -v s=$SYMBOL '{
 	printf("queryNodeIndex(\047%s AND code:%s AND type:Symbol\047).taint()\n",$1,s)
 }' | \
-traversal.py -a functionId code | \
+lookup.py -g -a functionId code | \
 awk 'BEGIN {FS=OFS="\t"} { split($2,a,":"); split($3,b,":"); print a[2], b[2] }' | \
 demux.py --outputDir $TAINT_DIR
