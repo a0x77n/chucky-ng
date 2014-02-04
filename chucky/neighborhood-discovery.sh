@@ -1,7 +1,6 @@
 #!/bin/bash
 
 source chucky/chucky.conf
-check_config
 
 if [ ! -d "$BAG_OF_WORDS_DIR" ]; then
    	printf 'No embedding found at %s.\n' "$BAG_OF_WORDS_DIR"
