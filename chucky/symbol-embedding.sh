@@ -13,9 +13,9 @@ fi
 #
 echo "type:Symbol AND code:$SYMBOL" | \
 lookup.py --attributes functionId | \
-cut -f2 | \
+cut --fields=2 | \
 awk '{printf("%s AND (type:IdentifierDeclType OR type:ParameterType OR type:Callee)\n", $1) }' | 
-lookup.py -a functionId code | \
+lookup.py --attributes functionId code | \
 awk 'BEGIN { FS=OFS="\t" } { split($2,a,":"); split($3,b,":"); print a[2], b[2] }' | \
 demux.py --outputDir $BAG_OF_WORDS_DIR
 
