@@ -33,9 +33,16 @@ Gremlin.defineStep('isArgumentOf', [Vertex, Pipe], {
 	.in('USE')
 	.filter{ it.type == 'Argument' }
 	.in('IS_AST_PARENT')
-	.loop(1){ it.object.out('USE').count() == 0 }
+	.loop(1){ it.object.type != 'CallExpression' }
+	.as('callExpression')
+	.out('IS_AST_PARENT')
+	.filter{ it.type == 'Identifier' }
+	.sideEffect{ callee = it.code }
+	.back('callExpression')
+	.in('IS_AST_PARENT')
+	.loop(1){true}{it.object.out('USE').count() > 0}
 	.out('USE')
-	.filter{ it.code != "" }
+	.filter{ it.code == callee }
 });
 
 Gremlin.defineStep('assigns', [Vertex, Pipe], {
