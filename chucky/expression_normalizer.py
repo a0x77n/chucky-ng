@@ -19,12 +19,12 @@ class ExpressionNormalizer():
         yield expr
 
     def _normalize_identifier_node(self, code):
-        if self.argset and code in self.argset:
-            self.logger.debug('$ARG (%s)', code)
-            yield '$ARG'
-        elif self.retset and code in self.retset:
+        if self.retset and code in self.retset:
             self.logger.debug('$RET (%s)', code)
             yield '$RET'
+        elif self.argset and code in self.argset:
+            self.logger.debug('$ARG (%s)', code)
+            yield '$ARG'
         else:
             self.logger.debug(code)
             yield code
@@ -69,14 +69,14 @@ class ExpressionNormalizer():
             join_func = lambda x : ' '.join([x[0], '?', x[1], ':', x[2]])
             for expr in self._normalize_node(node, join_func):
                 yield expr
-        elif node_type == 'PtrMemberAccess':
-            join_func = lambda x : ' -> '.join(x)
-            for expr in self._normalize_node(node, join_func):
-                yield expr
-        elif node_type == 'MemberAccess':
-            join_func = lambda x : ' . '.join(x)
-            for expr in self._normalize_node(node, join_func):
-                yield expr
+        #elif node_type == 'PtrMemberAccess':
+        #    join_func = lambda x : ' -> '.join(x)
+        #    for expr in self._normalize_node(node, join_func):
+        #        yield expr
+        #elif node_type == 'MemberAccess':
+        #    join_func = lambda x : ' . '.join(x)
+        #    for expr in self._normalize_node(node, join_func):
+        #        yield expr
         elif node_type == 'ArrayIndexing':
             join_func = lambda x : ' '.join([x[0], '[', x[1], ']'])
             for expr in self._normalize_node(node, join_func):
@@ -119,7 +119,7 @@ class ExpressionNormalizer():
                 yield expr
         elif node_type == 'IncDec':
             yield code
-        elif node_type == 'Identifier':
+        elif node_type == 'Identifier' or node_type == 'PtrMemberAccess' or node_type == 'MemberAccess':
             for expr in self._normalize_identifier_node(node.code):
                 yield expr
         elif node_type == 'PrimaryExpression':
