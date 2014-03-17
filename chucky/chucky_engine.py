@@ -83,19 +83,30 @@ class ChuckyEngine():
                 stdout=subprocess.PIPE,
                 stderr=subprocess.PIPE)
         neighbors = []
-        (stdout, _) = knn.communicate(str(self.config.function.node_id))
+        (stdout, stderr) = knn.communicate(str(self.config.function.node_id))
         returncode = knn.poll()
         if returncode:
-            raise subprocess.CalledProcessError(returncode, command, None)
+            raise subprocess.CalledProcessError(returncode, command, stderr)
         for neighbor in stdout.strip().split('\n'):
             neighbors.append(Function(neighbor))
         return neighbors
 
     def _anomaly_rating(self):
-        command = 'python anomaly_score.py -d {dir} -f {dir}/TOC'
+        command = 'python ../python/anomaly_score.py -e -d {dir} -f {dir}/TOC'
         command = command.format(dir = self.exprdir)
         args = shlex.split(command)
-        return map(float, subprocess.check_output(args).strip().split('\n'))
+        output = subprocess.check_output(args)
+
+        results = {}
+        for line in output.strip().split('\n'):
+            if line.startswith('#'):
+                func = line[3:]
+                results[func] = []
+            else:
+                score, feat = line.split(' ', 1)
+                results[func].append((float(score), feat))
+                self.logger.debug('%s %+1.5f %s.', func, float(score), feat)
+        return results
 
     def analyze(self, config):
 
@@ -105,9 +116,10 @@ class ChuckyEngine():
         self.workingdir = tempfile.mkdtemp(dir=self.basedir)
         self.bagdir = os.path.join(self.workingdir, 'bag')
         self.exprdir = os.path.join(self.workingdir, 'exp')
-        self.logger.debug('Working directory is %s.', self.workingdir)
         os.makedirs(os.path.join(self.bagdir, 'data'))
         expr_saver = DemuxTool(self.exprdir)
+
+        self.logger.debug('Working directory is %s.', self.workingdir)
 
         # get all relatives (functions using the given symbol) 
         relatives = self.config.function.relatives(self.config.symbol)
@@ -121,34 +133,41 @@ class ChuckyEngine():
             return
 
         # extract and embedd api symbols for each relative
-        for relative in relatives:
+        for i, relative in enumerate(relatives, 1):
+            self.logger.info('Processing %s (%s/%s).', relative, i, len(relatives))
             if relative.node_id not in self.api_symbol_cache.toc:
                 self._cache_api_symbols(relative)
-        for relative in relatives:
             self._load_from_api_symbol_cache(relative.node_id)
         self._load_toc()
         self._create_api_symbol_embedding()
 
         # process neighbors
-        neighborhood = self._neighborhood()
-        for i, neighbor in enumerate(neighborhood, 1):
-            self.logger.info('Processing %s (%s/%s).', neighbor, i, len(neighborhood))
-            symbol = neighbor.find_symbol_by_name(self.config.symbol.code)
-            conditions = self._relevant_conditions(symbol)
-            argset = self._arguments(symbol)
-            retset = self._return_value(symbol)
-            expr_normalizer = ExpressionNormalizer(argset, retset)
-            for condition in conditions:
-                root = condition.childs()[0]
-                for expr in expr_normalizer.generate(root):
-                    expr_saver.demux(neighbor.node_id, expr)
-            if not conditions:
-                expr_saver.demux(neighbor.node_id, None)
-        self._create_function_embedding()
-        result = zip(self._anomaly_rating(), neighborhood)
-
-        # print results
-        result.sort(reverse = True, key = lambda x : x[0])
-        for score, neighbor in result:
-            print '{:0.5f}\t{}'.format(score, neighbor)
-        shutil.rmtree(self.workingdir) # clean up
+        try:
+            neighborhood = self._neighborhood()
+            for i, neighbor in enumerate(neighborhood, 1):
+                self.logger.info('Processing %s (%s/%s).', neighbor, i, len(neighborhood))
+                symbol = neighbor.find_symbol_by_name(self.config.symbol.code)
+                conditions = self._relevant_conditions(symbol)
+                argset = self._arguments(symbol)
+                retset = self._return_value(symbol)
+                expr_normalizer = ExpressionNormalizer(argset, retset)
+                for condition in conditions:
+                    root = condition.childs()[0]
+                    for expr in expr_normalizer.generate(root):
+                        expr_saver.demux(neighbor.node_id, expr)
+                if not conditions:
+                    expr_saver.demux(neighbor.node_id, None)
+            self._create_function_embedding()
+            result = self._anomaly_rating()
+            sorted_result = sorted(result.items(), key=lambda x: max(x[1])[0], reverse = True)
+            for function, data in sorted_result:
+                score, feat = max(data)
+                for neighbor in neighborhood:
+                    if neighbor.node_id == function:
+                        print '{: 6.5f}\t{}\t{} ({})'.format(score, feat, neighbor, function)
+        except subprocess.CalledProcessError as e:
+            self.logger.error(e)
+            self.logger.error('Do not clean up.')
+        else:
+            self.logger.debug('Cleaning up.')
+            shutil.rmtree(self.workingdir) # clean up
