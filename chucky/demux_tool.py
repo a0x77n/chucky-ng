@@ -22,7 +22,8 @@ class DemuxTool():
         with open(os.path.join(self._directory, 'TOC')) as f:
             for number, key in enumerate(f):
                 self.toc[int(key)] = number
-        self._next_file_number = number + 1
+        #self._next_file_number = number + 1
+        self._next_file_number = len(self.toc)
 
     def _add_to_toc(self, key, value):
         toc = open(self._directory + '/TOC', 'a+')
