@@ -88,13 +88,27 @@ class Symbol(Node):
         return self.code
 
     def is_callee(self):
-        lucene_query = 'type:CallExpression AND functionId:"{}"'
-        lucene_query = lucene_query.format(self.function_id)
-        traversal = (
-            'out(\'IS_AST_PARENT\')'
-            '.filter{{ it.type == \'Identifier\' && it.code == "{}" }}'
-        ).format(self.code)
-        result = jutils.lookup(lucene_query, traversal = traversal)
+        node_selection = 'g.v("{}")'.format(self.node_id)
+        traversal = 'filterCallees()'
+        result = jutils.raw_lookup(node_selection, traversal = traversal)
+        if result:
+            return True
+        else:
+            return False
+
+    def is_param(self):
+        node_selection = 'g.v("{}")'.format(self.node_id)
+        traversal = 'filterParameters()'
+        result = jutils.raw_lookup(node_selection, traversal = traversal)
+        if result:
+            return True
+        else:
+            return False
+
+    def is_identifier(self):
+        node_selection = 'g.v("{}")'.format(self.node_id)
+        traversal = 'filterIdentifiers()'
+        result = jutils.raw_lookup(node_selection, traversal = traversal)
         if result:
             return True
         else:
@@ -176,6 +190,12 @@ class Function(Node):
         if self != symbol.function():
             raise RuntimeError()
         lucene_query = 'type:Symbol AND code:"{}"'.format(symbol.code)
+        #if symbol.is_param():
+        #    traversal = 'filterParameters().transform{ g.v(it.functionId) }'
+        #elif symbol.is_callee():
+        #    traversal = 'filterCallees().transform{ g.v(it.functionId) }'
+        #else:
+        #    traversal = 'filterIdentifiers().transform{ g.v(it.functionId) }'
         traversal = 'transform{ g.v(it.functionId) }'
         relatives = []
         results = jutils.lookup(lucene_query, traversal = traversal)
