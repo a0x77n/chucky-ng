@@ -6,14 +6,6 @@ Gremlin.defineStep('filterParameters', [Vertex, Pipe], {
 	.back('symbol')
 });
 
-Gremlin.defineStep('filterArguments', [Vertex, Pipe], {
-	_()
-	.as('symbol')
-	.in('USE')
-	.filter{ it.type == 'Argument' }
-	.back('symbol')
-});
-
 Gremlin.defineStep('filterIdentifiers', [Vertex, Pipe], {
 	_()
 	.as('symbol')
@@ -52,8 +44,6 @@ Gremlin.defineStep('isArgumentOf', [Vertex, Pipe], {
 	.filter{ it.code == callee }
 });
 
-
-
 Gremlin.defineStep('assigns', [Vertex, Pipe], {
 	_()
 	.sideEffect{ symbol = it.code }
@@ -70,7 +60,6 @@ Gremlin.defineStep('assigns', [Vertex, Pipe], {
 	.filter{it.code.equals(symbol)}
 	.back('candidate')
 	.out('DEF')
-	.filter{ it.code != "" }
 });
 
 Gremlin.defineStep('hasArguments', [Vertex, Pipe], {
@@ -89,7 +78,6 @@ Gremlin.defineStep('hasArguments', [Vertex, Pipe], {
 	.out('IS_AST_PARENT')
 	.filter{ it.type == 'Argument' }
 	.out('USE')
-	.filter{ it.code != "" }
 });
 
 Gremlin.defineStep('isAssignedBy', [Vertex, Pipe], {
@@ -99,5 +87,20 @@ Gremlin.defineStep('isAssignedBy', [Vertex, Pipe], {
 	.filter{ it.type == 'AssignmentExpr' }
 	.in('IS_AST_PARENT')
 	.out('USE')
-	.filter{ it.code != "" }
+});
+
+Gremlin.defineStep('symbolToUsingConditions', [Vertex, Pipe], {
+	_()
+	.in('USE', 'DEF')
+	.filter{it.type != 'BasicBlock'}
+        .ifThenElse{it.type == 'Condition'}
+		{it}
+		{it.in('IS_AST_PARENT').loop(1){true}{it.object.type == 'Condition'}}
+});
+
+Gremlin.defineStep('filterAPISymbols', [Vertex, Pipe], {
+	_()
+	.filter{it.type == 'IdentifierDeclType'
+		|| it.type == 'ParameterType'
+		|| (it.type == 'Identifier' && it.in.has('type', 'CallExpression'))}
 });
