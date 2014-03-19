@@ -156,7 +156,12 @@ class Symbol(Node):
 
     def traverse_to_using_conditions(self):
         node_selection = 'g.v("{}")'.format(self.node_id)
-        traversal = 'in(\'USE\').filter{ it.type == \'Condition\' }'
+        #traversal = (
+        #    'in(\'USE\', \'DEF\').filter{it.type != \'BasicBlock\'}'
+        #    '.ifThenElse{it.type == \'Condition\'}{it}'
+        #    '{it.in(\'IS_AST_PARENT\').loop(1){true}{it.object.type == \'Condition\'}}'
+        #)
+        traversal = 'symbolToUsingConditions()'
         result = jutils.raw_lookup(node_selection, traversal = traversal)
         return map(lambda x : Condition(x[0], x[1].get_properties()), result)
 
@@ -190,13 +195,14 @@ class Function(Node):
         if self != symbol.function():
             raise RuntimeError()
         lucene_query = 'type:Symbol AND code:"{}"'.format(symbol.code)
-        #if symbol.is_param():
-        #    traversal = 'filterParameters().transform{ g.v(it.functionId) }'
-        #elif symbol.is_callee():
-        #    traversal = 'filterCallees().transform{ g.v(it.functionId) }'
-        #else:
-        #    traversal = 'filterIdentifiers().transform{ g.v(it.functionId) }'
-        traversal = 'transform{ g.v(it.functionId) }'
+        if symbol.is_param():
+            traversal = 'filterParameters().transform{ g.v(it.functionId) }'
+        elif symbol.is_callee():
+            traversal = 'filterCallees().transform{ g.v(it.functionId) }'
+        elif symbol.is_identifier():
+            traversal = 'filterIdentifiers().transform{ g.v(it.functionId) }'
+        else:
+            traversal = 'transform{ g.v(it.functionId) }'
         relatives = []
         results = jutils.lookup(lucene_query, traversal = traversal)
         if results:
@@ -220,12 +226,13 @@ class Function(Node):
 
     def api_symbols(self):
         lucene_query = 'functionId:"{}"'.format(self.node_id)
-        traversal = (
-            'filter{ it.type == \'IdentifierDeclType\''
-            '|| it.type == \'ParameterType\''
-            '|| (it.type == \'Identifier\' && it.in.has(\'type\', \'CallExpression\') )'
-            '}'
-        )
+        #traversal = (
+        #    'filter{ it.type == \'IdentifierDeclType\''
+        #    '|| it.type == \'ParameterType\''
+        #    '|| (it.type == \'Identifier\' && it.in.has(\'type\', \'CallExpression\') )'
+        #    '}'
+        #)
+        traversal = 'filterAPISymbols()'
         result = jutils.lookup(lucene_query, traversal)
         return map(lambda x : ASTNode(x[0], x[1].get_properties()), result)
 
@@ -242,4 +249,3 @@ class Function(Node):
     @property
     def signature(self):
         return self.get_property('signature')
-
