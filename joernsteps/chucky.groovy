@@ -100,7 +100,5 @@ Gremlin.defineStep('symbolToUsingConditions', [Vertex, Pipe], {
 
 Gremlin.defineStep('filterAPISymbols', [Vertex, Pipe], {
 	_()
-	.filter{it.type == 'IdentifierDeclType'
-		|| it.type == 'ParameterType'
-		|| (it.type == 'Identifier' && it.in.has('type', 'CallExpression'))}
+	.filter{it.type == 'IdentifierDeclType' || it.type == 'ParameterType' || (it.type == 'Identifier' && it.in.has('type', 'CallExpression'))}
 });
