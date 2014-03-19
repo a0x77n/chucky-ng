@@ -14,27 +14,28 @@ class ExpressionNormalizer():
             for expr in self._normalize(child):
                 yield expr
             expressions.append(expr)
-        expr = '( ' + join_function(expressions) + ' )'
-        self.logger.debug(expr)
+        #expr = '( ' + join_function(expressions) + ' )'
+        expr = join_function(expressions)
+        self.logger.debug('[%s] %s', ast_node.node_type, expr)
         yield expr
 
     def _normalize_identifier_node(self, code):
         if self.retset and code in self.retset:
-            self.logger.debug('$RET (%s)', code)
+            self.logger.debug('[%s] $RET (%s)', 'Identifier', code)
             yield '$RET'
         elif self.argset and code in self.argset:
-            self.logger.debug('$ARG (%s)', code)
+            self.logger.debug('[%s] $ARG (%s)', 'Identifier', code)
             yield '$ARG'
         else:
-            self.logger.debug(code)
+            self.logger.debug('[%s] %s', 'Identifier', code)
             yield code
 
     def _normalize_primary_expression_node(self, code):
         if code.startswith('\'') or code.startswith('\"'):
-            self.logger.debug(code)
+            self.logger.debug('[%s] %s', 'PrimaryExpression', code)
             yield code
         else:
-            self.logger.debug('$NUM')
+            self.logger.debug('[%s] $NUM (%s)', 'PrimaryExpression', code)
             yield '$NUM'
 
     def _normalize(self, node):
