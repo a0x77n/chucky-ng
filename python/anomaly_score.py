@@ -5,7 +5,6 @@ from joerntools.mlutils.EmbeddingLoader import EmbeddingLoader
 
 import scipy.sparse
 import sys
-import numpy
 
 DESCRIPTION = """ Calculates the center of mass of the given embedding
 and returns the distance of every input line """
@@ -21,7 +20,6 @@ class AnomalyScore(PipeTool):
         self.argParser.add_argument('-d', '--dirname', nargs='?',
                                     type = str, help="""The directory containing the embedding""",
                                     default = DEFAULT_DIRNAME)
-        numpy.set_printoptions(threshold=numpy.nan)
 
     def _loadEmbedding(self, dirname):
         try:
@@ -50,7 +48,7 @@ class AnomalyScore(PipeTool):
         distance = (self.emb.D - self.emb.x[index])
         for feat, score in zip(distance.indices, distance.data):
             feat_string = self.emb.rFeatTable[feat].replace('%20', ' ')
-            print '{:+6.5f} {} ({})'.format(score, feat_string, feat)
+            print '{:+6.5f} {}'.format(score, feat_string)
 
     def calculateCenterOfMass(self):
        	return scipy.sparse.csr_matrix(self.emb.x.mean(axis=0))
