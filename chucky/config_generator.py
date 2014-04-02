@@ -57,19 +57,3 @@ class ConfigGenerator(object):
                 configurations.append(
                         ConfigRecord(function, self.identifier, 'Callee', self.n_neighbors))
         return configurations
-
-    def group_callees_by_function_id(self, callees):
-        groups = {}
-        for callee in callees:
-            if callee.function_id not in groups:
-                groups[callee.function_id] = []
-            groups[callee.function_id].append(callee)
-        return groups.items()
-
-    def group_callees_by_code(self, callees):
-        groups = {}
-        for callee in callees:
-            if callee.code not in groups:
-                groups[callee.code] = []
-            groups[callee.code].append(callee)
-        return groups.items()
