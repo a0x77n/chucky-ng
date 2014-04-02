@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-from config_generator import ConfigRecord
+from config_generator import ConfigGenerator
 from chucky_engine import ChuckyEngine
 
 import logging
@@ -26,6 +26,14 @@ class Chucky():
 
     def __init__(self):
         self._init_arg_parser()
+        self.args = self.arg_parser.parse_args()
+        self._config_logger()
+        self._create_chucky_dir()
+        self.config_generator = ConfigGenerator(
+                self.args.identifier,
+                self.args.identifier_type,
+                self.args.n_neighbors)
+        self.engine = ChuckyEngine(self.args.chucky_dir)
 
     def _init_arg_parser(self):
         self.arg_parser = argparse.ArgumentParser(description=DESCRIPTION)
@@ -35,7 +43,7 @@ class Chucky():
                 '-i', '--identifier-type',
                 action = 'store',
                 default = 'function',
-                choices = ['function','symbol'],
+                choices = ['function','callee', 'parameter', 'variable'],
                 help = """The type of identifier the positional argument
                 `identifier` refers to (function, symbol).""")
         self.arg_parser.add_argument(
@@ -95,7 +103,8 @@ class Chucky():
         console_handler.setLevel(self.args.logging_level)
         file_handler = logging.FileHandler('chucky.log', 'w+')
         file_handler.setLevel('DEBUG')
-        console_formatter = logging.Formatter('%(message)s')
+        #console_formatter = logging.Formatter('%(message)s')
+        console_formatter = logging.Formatter('[%(levelname)s] %(message)s')
         file_formatter = logging.Formatter('[%(levelname)s] %(message)s')
         console_handler.setFormatter(console_formatter)
         file_handler.setFormatter(file_formatter)
@@ -103,23 +112,20 @@ class Chucky():
         self.logger.addHandler(file_handler)
 
     def execute(self):
-        self.args = self.arg_parser.parse_args()
-        self._config_logger()
-        self._create_chucky_dir()
-
-        engine = ChuckyEngine(self.args.chucky_dir)
-        for config in ConfigRecord.generate(
-                self.args.identifier,
-                self.args.identifier_type,
-                self.args.n_neighbors):
-            print 'Configuration: {}'.format(config)
+        configurations = self.config_generator.generate()
+        n_configurations = len(configurations)
+        for i, configuration in enumerate(configurations, 1):
+            print 'Configuration ({}/{}): {}'.format(
+                    i,
+                    n_configurations,
+                    configuration)
             if self.args.interactive:
-                choice = raw_input('Run configuration [(yes)/no/quit]? ').lower()
+                choice = raw_input('Run configuration ([yes]/no/quit)? ').lower()
                 if choice in ['n', 'no']:
                     continue
                 elif choice in ['q', 'quit']:
                     return
-            engine.analyze(config)
+            self.engine.analyze(configuration)
 
 if __name__ == '__main__':
     Chucky().execute()

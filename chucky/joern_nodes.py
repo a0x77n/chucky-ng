@@ -6,6 +6,7 @@ class Node(object):
     def __init__(self, node_id, properties = None):
         self.node_id = node_id
         self.properties = properties
+        self.node_selection = 'g.v("{}")'.format(self.node_id)
         if not self.properties:
             self.load_properties()
 
@@ -25,8 +26,7 @@ class Node(object):
         return self.node_id
 
     def load_properties(self):
-        node_selection = 'g.v("{}")'.format(self.node_id)
-        _, node = jutils.raw_lookup(node_selection)[0]
+        _, node = jutils.raw_lookup(self.node_selection)[0]
         self.properties = node.get_properties()
 
     def get_property(self, label):
@@ -45,18 +45,16 @@ class ASTNode(Node):
         Node.__init__(self, node_id, properties)
 
     def __str__(self):
-        return str(self.code)
+        return '{}'.format(self.code)
 
     def parent(self):
-        node_selection = 'g.v("{}")'.format(self.node_id)
-        traversal = 'in(\'IS_AST_PARENT\')'
-        result = jutils.raw_lookup(node_selection, traversal = traversal)
+        traversal = 'parents()'
+        result = jutils.raw_lookup(self.node_selection, traversal = traversal)
         return map(lambda x : ASTNode(x[0], x[1].get_properties()), result)
 
-    def childs(self):
-        node_selection = 'g.v("{}")'.format(self.node_id)
-        traversal = 'out(\'IS_AST_PARENT\')'
-        result = jutils.raw_lookup(node_selection, traversal = traversal)
+    def children(self):
+        traversal = 'children()'
+        result = jutils.raw_lookup(self.node_selection, traversal = traversal)
         return map(lambda x : ASTNode(x[0], x[1].get_properties()), result)
 
     def function(self):
@@ -79,97 +77,58 @@ class Condition(ASTNode):
     def __init__(self, node_id, properties = None):
         Node.__init__(self, node_id, properties) 
 
+class Parameter(ASTNode):
+
+    def __init__(self, node_id, properties = None):
+        Node.__init__(self, node_id, properties) 
+
+class Identifier(ASTNode):
+
+    def __init__(self, node_id, properties = None):
+        Node.__init__(self, node_id, properties) 
+
+class Callee(ASTNode):
+
+    def __init__(self, node_id, properties = None):
+        Node.__init__(self, node_id, properties) 
+
+    def __str__(self):
+        return '{}'.format(self.code)
+
+    def arguments(self):
+        traversal = 'calleeToArguments()'
+        result = jutils.raw_lookup(self.node_selection, traversal = traversal)
+        return map(lambda x : Symbol(x[0], x[1].get_properties()), result)
+
+    def return_value(self):
+        traversal = 'calleeToReturnValue()'
+        result = jutils.raw_lookup(self.node_selection, traversal = traversal)
+        return map(lambda x : Symbol(x[0], x[1].get_properties()), result)
+
+    @staticmethod
+    def lookup_callees_by_name(code):
+        lucene_query = 'type:Callee AND code:"{}"'.format(code)
+        symbols = jutils.raw_lookup(lucene_query)
+        return map(lambda x : Symbol(x[0], x[1].get_properties()), symbols)
+
 class Symbol(Node):
 
     def __init__(self, node_id, properties = None):
         Node.__init__(self, node_id, properties) 
 
     def __str__(self):
-        return self.code
-
-    def is_callee(self):
-        node_selection = 'g.v("{}")'.format(self.node_id)
-        traversal = 'filterCallees()'
-        result = jutils.raw_lookup(node_selection, traversal = traversal)
-        if result:
-            return True
-        else:
-            return False
-
-    def is_param(self):
-        node_selection = 'g.v("{}")'.format(self.node_id)
-        traversal = 'filterParameters()'
-        result = jutils.raw_lookup(node_selection, traversal = traversal)
-        if result:
-            return True
-        else:
-            return False
-
-    def is_identifier(self):
-        node_selection = 'g.v("{}")'.format(self.node_id)
-        traversal = 'filterIdentifiers()'
-        result = jutils.raw_lookup(node_selection, traversal = traversal)
-        if result:
-            return True
-        else:
-            return False
-
-    def arguments(self):
-        x = []
-        node_selection = 'g.v("{}")'.format(self.node_id)
-        traversal = 'hasArguments()'
-        result = jutils.raw_lookup(node_selection, traversal)
-        if result:
-            for node_id, node in result:
-                x.append(Symbol(node_id, node))
-        return set(x)
-
-    def argument_of(self):
-        x = []
-        node_selection = 'g.v("{}")'.format(self.node_id)
-        traversal = 'isArgumentOf()'
-        result = jutils.raw_lookup(node_selection, traversal)
-        if result:
-            for node_id, node in result:
-                x.append(Symbol(node_id, node))
-        return set(x)
-
-    def assigns(self):
-        x = []
-        node_selection = 'g.v("{}")'.format(self.node_id)
-        traversal = 'assigns()'
-        result = jutils.raw_lookup(node_selection, traversal)
-        if result:
-            for node_id, node in result:
-                x.append(Symbol(node_id, node))
-        return set(x)
-
-    def assigned_by(self):
-        x = []
-        node_selection = 'g.v("{}")'.format(self.node_id)
-        traversal = 'isAssignedBy()'
-        result = jutils.raw_lookup(node_selection, traversal)
-        if result:
-            for node_id, node in result:
-                x.append(Symbol(node_id, node))
-        return set(x)
+        return '{}'.format(self.code)
 
     def traverse_to_using_conditions(self):
-        node_selection = 'g.v("{}")'.format(self.node_id)
-        #traversal = (
-        #    'in(\'USE\', \'DEF\').filter{it.type != \'BasicBlock\'}'
-        #    '.ifThenElse{it.type == \'Condition\'}{it}'
-        #    '{it.in(\'IS_AST_PARENT\').loop(1){true}{it.object.type == \'Condition\'}}'
-        #)
         traversal = 'symbolToUsingConditions()'
-        result = jutils.raw_lookup(node_selection, traversal = traversal)
+        result = jutils.raw_lookup(self.node_selection, traversal = traversal)
         return map(lambda x : Condition(x[0], x[1].get_properties()), result)
 
     def function(self):
         return Function(self.function_id)
 
     @staticmethod
-    def find_symbols_by_name(code):
+    def lookup_symbols_by_name(code):
         lucene_query = 'type:Symbol AND code:"{}"'.format(code)
         symbols = jutils.lookup(lucene_query)
         return map(lambda x : Symbol(x[0], x[1].get_properties()), symbols)
@@ -188,63 +147,84 @@ class Function(Node):
         Node.__init__(self, node_id, properties) 
 
     def __str__(self):
-        return self.name
-
-    def relatives(self, symbol):
-        """ All function sharing the same symbol """
-        if self != symbol.function():
-            raise RuntimeError()
-        lucene_query = 'type:Symbol AND code:"{}"'.format(symbol.code)
-        if symbol.is_param():
-            traversal = 'filterParameters().transform{ g.v(it.functionId) }'
-        elif symbol.is_callee():
-            traversal = 'filterCallees().transform{ g.v(it.functionId) }'
-        elif symbol.is_identifier():
-            traversal = 'filterIdentifiers().transform{ g.v(it.functionId) }'
-        else:
-            traversal = 'transform{ g.v(it.functionId) }'
-        relatives = []
-        results = jutils.lookup(lucene_query, traversal = traversal)
-        if results:
-            for node_id, node in results:
-                relatives.append(Function(node_id, node))
-        return relatives
+        return '{}'.format(self.name)
 
     def symbols(self):
         lucene_query = 'functionId:"{}" AND type:Symbol'.format(self.node_id)
         symbols = jutils.lookup(lucene_query)
         return map(lambda x : Symbol(x[0], x[1].get_properties()), symbols)
 
-    def find_symbol_by_name(self, code):
+    def callees(self):
+        lucene_query = 'functionId:"{}" AND type:Callee'.format(self.node_id)
+        result = jutils.lookup(lucene_query)
+        return map(lambda x : Callee(x[0], x[1].get_properties()), result)
+
+    def parameters(self):
+        lucene_query = 'functionId:"{}" AND type:Identifier'.format(self.node_id)
+        traversal = 'filterParameters()'
+        symbols = jutils.lookup(lucene_query, traversal = traversal)
+        return map(lambda x : Identifier(x[0], x[1].get_properties()), symbols)
+
+    def variables(self):
+        lucene_query = 'functionId:"{}" AND type:Identifier'.format(self.node_id)
+        traversal = 'filterVariables()'
+        symbols = jutils.lookup(lucene_query, traversal = traversal)
+        return map(lambda x : Identifier(x[0], x[1].get_properties()), symbols)
+
+    def lookup_symbol_by_name(self, code):
         lucene_query = 'type:Symbol AND functionId:"{}" AND code:"{}"'
         lucene_query = lucene_query.format(self.node_id, code)
         result = jutils.lookup(lucene_query)
-        if result:
-            return Symbol(result[0][0], result[0][1].get_properties())
-        else:
-            return None
+        return Symbol(result[0][0], result[0][1].get_properties())
 
-    def api_symbols(self):
-        lucene_query = 'functionId:"{}"'.format(self.node_id)
-        #traversal = (
-        #    'filter{ it.type == \'IdentifierDeclType\''
-        #    '|| it.type == \'ParameterType\''
-        #    '|| (it.type == \'Identifier\' && it.in.has(\'type\', \'CallExpression\') )'
-        #    '}'
-        #)
-        traversal = 'filterAPISymbols()'
-        result = jutils.lookup(lucene_query, traversal)
+    def lookup_callees_by_name(self, code):
+        lucene_query = 'type:Callee AND functionId:"{}" AND code:"{}"'
+        lucene_query = lucene_query.format(self.node_id, code)
+        result = jutils.lookup(lucene_query)
+        return map(lambda x : Callee(x[0], x[1].get_properties()), result)
+
+    def api_symbol_nodes(self):
+        traversal = 'functionToAPISymbolNodes()'
+        result = jutils.raw_lookup(self.node_selection, traversal)
         return map(lambda x : ASTNode(x[0], x[1].get_properties()), result)
 
     @staticmethod
-    def find_functions_by_name(name):
-        lucene_query = 'type:Function AND functionName:"{}"'.format(name)
-        symbols = jutils.lookup(lucene_query)
-        return map(lambda x : Function(x[0], x[1]), symbols)
+    def lookup_functions_by_name(name):
+        lucene_query = 'type:Function AND name:"{}"'.format(name)
+        result = jutils.lookup(lucene_query)
+        return map(lambda x : Function(x[0], x[1]), result)
+
+    @staticmethod
+    def lookup_functions_by_callee(code):
+        lucene_query = 'type:Callee AND code:"{}"'.format(code)
+        traversal = 'functions().dedup()'
+        result = jutils.lookup(lucene_query, traversal)
+        return map(lambda x : Function(x[0], x[1]), result)
+
+    @staticmethod
+    def lookup_functions_by_parameter(code):
+        lucene_query = 'type:Identifier AND code:"{}"'.format(code)
+        traversal = 'filterParameters().functions().dedup()'
+        result = jutils.lookup(lucene_query, traversal)
+        return map(lambda x : Function(x[0], x[1]), result)
+
+    @staticmethod
+    def lookup_functions_by_variable(code):
+        lucene_query = 'type:Identifier AND code:"{}"'.format(code)
+        traversal = 'filterVariables().functions().dedup()'
+        result = jutils.lookup(lucene_query, traversal)
+        return map(lambda x : Function(x[0], x[1]), result)
+
+    @staticmethod
+    def lookup_functions_by_symbol(code):
+        lucene_query = 'type:Symbol AND code:"{}"'.format(code)
+        traversal = 'functions().dedup()'
+        result = jutils.lookup(lucene_query, traversal)
+        return map(lambda x : Function(x[0], x[1]), result)
 
     @property
     def name(self):
-        return self.get_property('functionName')
+        return self.get_property('name')
 
     @property
     def signature(self):

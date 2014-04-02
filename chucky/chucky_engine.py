@@ -20,8 +20,8 @@ class ChuckyEngine():
         self.logger = logging.getLogger('chucky')
 
     def _cache_api_symbols(self, function):
-        for api_symbol in function.api_symbols():
-            self.logger.debug('Caching %s %s.', function, api_symbol)
+        for api_symbol in function.api_symbol_nodes():
+            self.logger.debug('Caching %s %s.', function, api_symbol.code)
             self.api_symbol_cache.demux(function.node_id,  api_symbol.code)
 
     def _load_from_api_symbol_cache(self, function):
@@ -35,21 +35,49 @@ class ChuckyEngine():
         target = os.path.join(self.bagdir, 'TOC')
         os.symlink(os.path.abspath(source),os.path.abspath(target))
 
-    def _relevant_conditions(self, symbol):
-        taintset = SymbolTainter().taint(symbol)
+    def _relative_functions(self):
+        if self.config.target_type == 'Parameter':
+            relatives = Function.lookup_functions_by_parameter(self.config.target_name)
+        elif self.config.target_type == 'Variable':
+            relatives = Function.lookup_functions_by_variable(self.config.target_name)
+        elif self.config.target_type == 'Callee':
+            relatives = Function.lookup_functions_by_callee(self.config.target_name)
+        return relatives
+
+    def _relevant_conditions(self, function):
+        symbol_tainter = SymbolTainter()
+        if self.config.target_type == 'Callee':
+            taintset = set()
+            callees = function.lookup_callees_by_name(self.config.target_name)
+            for callee in callees:
+                for argument in callee.arguments():
+                    taintset = taintset | symbol_tainter.taint_upwards(argument)
+                for return_value in callee.return_value():
+                    taintset = taintset | symbol_tainter.taint_upwards(return_value)
+        else:
+            symbol = function.lookup_symbol_by_name(self.config.target_name)
+            taintset = symbol_tainter.taint(symbol)
         conditions = map(lambda x : x.traverse_to_using_conditions(), taintset)
         conditions = set([c for sublist in conditions for c in sublist])
         return conditions
 
-    def _arguments(self, symbol):
-        argset = symbol.arguments()
-        return argset
+    def _arguments(self, function):
+        if self.config.target_type == 'Callee':
+            callees = function.lookup_callees_by_name(self.config.target_name)
+            arguments = map(lambda x : x.arguments(), callees)
+            arguments = [arg for sublist in arguments for arg in sublist]
+            return set(arguments)
+        else:
+            return set()
 
-    def _return_value(self, symbol):
-        retset = []
-        if symbol.is_callee():
-            retset = symbol.assigns()
-        return retset
+    def _return_value(self, function):
+        if self.config.target_type == 'Callee':
+            callees = function.lookup_callees_by_name(self.config.target_name)
+            arguments = map(lambda x : x.return_value(), callees)
+            arguments = [arg for sublist in arguments for arg in sublist]
+            return set(arguments)
+        else:
+            return set()
 
     def _create_api_symbol_embedding(self):
         config = 'sally -q -c sally.cfg'
@@ -75,7 +103,7 @@ class ChuckyEngine():
 
     def _neighborhood(self):
         command = 'knn.py -k {n_neighbors} --dirname {bagdir}'
-        command = command.format(n_neighbors=self.config.n, bagdir=self.bagdir)
+        command = command.format(n_neighbors=self.config.n_neighbors, bagdir=self.bagdir)
         args = shlex.split(command)
         knn = subprocess.Popen(
                 args,
@@ -121,13 +149,14 @@ class ChuckyEngine():
 
         self.logger.debug('Working directory is %s.', self.workingdir)
 
-        # get all relatives (functions using the given symbol) 
-        relatives = self.config.function.relatives(self.config.symbol)
+        # get all relatives (functions using the given target) 
+        relatives = self._relative_functions()
+
         self.logger.debug(
                 '%s functions using the symbol %s.',
-                len(relatives), self.config.symbol)
+                len(relatives), self.config.target_name)
 
-        if len(relatives) < self.config.n:
+        if len(relatives) < self.config.n_neighbors:
             self.logger.warning('Configuration skipped.')
             shutil.rmtree(self.workingdir) # clean up
             return
@@ -141,33 +170,35 @@ class ChuckyEngine():
         self._load_toc()
         self._create_api_symbol_embedding()
 
-        # process neighbors
         try:
+            # process neighbors
             neighborhood = self._neighborhood()
             for i, neighbor in enumerate(neighborhood, 1):
                 self.logger.info('Processing %s (%s/%s).', neighbor, i, len(neighborhood))
-                symbol = neighbor.find_symbol_by_name(self.config.symbol.code)
-                conditions = self._relevant_conditions(symbol)
-                argset = self._arguments(symbol)
-                retset = self._return_value(symbol)
+                conditions = self._relevant_conditions(neighbor)
+                argset = self._arguments(neighbor)
+                retset = self._return_value(neighbor)
                 expr_normalizer = ExpressionNormalizer(argset, retset)
                 for condition in conditions:
-                    root = condition.childs()[0]
-                    for expr in expr_normalizer.generate(root):
+                    root_expr = condition.children()[0]
+                    self.logger.debug('Normalizing condition ( {} ) ({})'.format(root_expr, root_expr.node_id))
+                    for expr in expr_normalizer.normalize_expression(root_expr):
                         expr_saver.demux(neighbor.node_id, expr)
                 if not conditions:
+                    # empty feature hack
                     expr_saver.demux(neighbor.node_id, None)
             self._create_function_embedding()
             result = self._anomaly_rating()
-            sorted_result = sorted(result.items(), key=lambda x: max(x[1])[0], reverse = True)
-            for function, data in sorted_result:
+            sorted_result = sorted(result.items(), key = lambda x : max(x[1])[0], reverse = True)
+            for i, (function, data) in enumerate(sorted_result, 1):
                 score, feat = max(data)
                 for neighbor in neighborhood:
                     if neighbor.node_id == function:
-                        print '{: 6.5f}\t{}\t{} ({})'.format(score, feat, neighbor, function)
+                        print '{:>3} {:< 6.5f}\t{:30}\t{:10}\t{}'.format(i, score, neighbor.name, function, feat)
         except subprocess.CalledProcessError as e:
             self.logger.error(e)
             self.logger.error('Do not clean up.')
         else:
+            #pass
             self.logger.debug('Cleaning up.')
-            shutil.rmtree(self.workingdir) # clean up
+            shutil.rmtree(self.workingdir)

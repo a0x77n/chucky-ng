@@ -1,104 +1,73 @@
+Gremlin.defineStep('filterVariables', [Vertex, Pipe], {
+        _() // Identifer node
+        .as('var')
+        .parents()
+        .filter{it.type == 'IdentifierDecl'}
+        .back('variable')
+});
+
 Gremlin.defineStep('filterParameters', [Vertex, Pipe], {
-	_()
-	.as('symbol')
-	.in('DEF')
-	.filter{ it.type == 'Parameter' }
-	.back('symbol')
+        _() // Identifer node
+        .as('param')
+        .parents()
+        .filter{it.type == 'Parameter'}
+        .back('param')
 });
 
-Gremlin.defineStep('filterIdentifiers', [Vertex, Pipe], {
-	_()
-	.as('symbol')
-	.in('DEF')
-	.filter{ it.type == 'IdentifierDecl' }
-	.back('symbol')
-});
-
-Gremlin.defineStep('filterCallees', [Vertex, Pipe], {
-	_()
-	.sideEffect{ code = it.code }
-	.as('symbol')
-	.in('USE')
-	.filter{ it.type != 'BasicBlock' }
-	.out('IS_AST_PARENT')
-	.loop(1){true}{it.object.type == 'CallExpression'}
-	.out('IS_AST_PARENT')
-	.filter{it.type == 'Identifier' && it.code.equals(code) }
-	.back('symbol')
-});
-
-Gremlin.defineStep('isArgumentOf', [Vertex, Pipe], {
-	_()
-	.in('USE')
-	.filter{ it.type == 'Argument' }
-	.in('IS_AST_PARENT')
-	.loop(1){ it.object.type != 'CallExpression' }
-	.as('callExpression')
-	.out('IS_AST_PARENT')
-	.filter{ it.type == 'Identifier' }
-	.sideEffect{ callee = it.code }
-	.back('callExpression')
-	.in('IS_AST_PARENT')
-	.loop(1){true}{it.object.out('USE').count() > 0}
-	.out('USE')
-	.filter{ it.code == callee }
-});
-
-Gremlin.defineStep('assigns', [Vertex, Pipe], {
-	_()
-	.sideEffect{ symbol = it.code }
-	.in('USE')
-	.filter{ it.type != 'BasicBlock' }
-	.out('IS_AST_PARENT')
-	.loop(1){ true }{ it.object.type == 'AssignmentExpr' }
-	.as('candidate')
-	.outE('IS_AST_PARENT')
-	.filter{it.n == '1' }
-	.inV()
-	.out('IS_AST_PARENT')
-	.loop(1){true}{it.object.type == 'Identifier'}
-	.filter{it.code.equals(symbol)}
-	.back('candidate')
-	.out('DEF')
-});
-
-Gremlin.defineStep('hasArguments', [Vertex, Pipe], {
-	_()
-	.sideEffect{ symbol = it.code }
-	.in('USE')
-	.filter{ it.type != 'BasicBlock' }
-	.out('IS_AST_PARENT')
-	.loop(1){true}{it.object.type == 'CallExpression'}
-	.as('candidate')
-	.out('IS_AST_PARENT')
-	.filter{it.type == 'Identifier' && it.code.equals(symbol) }
-	.back('candidate')
-	.out('IS_AST_PARENT')
-	.filter{ it.type == 'ArgumentList' }
-	.out('IS_AST_PARENT')
-	.filter{ it.type == 'Argument' }
-	.out('USE')
-});
-
-Gremlin.defineStep('isAssignedBy', [Vertex, Pipe], {
-	_()
-	.sideEffect{ symbol = it.code }
-	.in('DEF')
-	.filter{ it.type == 'AssignmentExpr' }
-	.in('IS_AST_PARENT')
-	.out('USE')
+Gremlin.defineStep('filterCallee', [Vertex, Pipe], {
+        _() // Identifer node
+        .as('callee')
+        .parents()
+        .filter{it.type == 'Callee'}
+        .back('callee')
 });
 
 Gremlin.defineStep('symbolToUsingConditions', [Vertex, Pipe], {
-	_()
+	_() // Symbol node
 	.in('USE', 'DEF')
 	.filter{it.type != 'BasicBlock'}
         .ifThenElse{it.type == 'Condition'}
 		{it}
-		{it.in('IS_AST_PARENT').loop(1){true}{it.object.type == 'Condition'}}
+		{it.parents().loop(1){true}{it.object.type == 'Condition'}}
 });
 
-Gremlin.defineStep('filterAPISymbols', [Vertex, Pipe], {
-	_()
-	.filter{it.type == 'IdentifierDeclType' || it.type == 'ParameterType' || (it.type == 'Identifier' && it.in.has('type', 'CallExpression'))}
+Gremlin.defineStep('functionToAPISymbolNodes', [Vertex, Pipe], {
+	_() // Function node
+	.functionToASTNodes()
+	.filter{it.type == 'IdentifierDeclType' || it.type == 'ParameterType' || it.type == 'Callee'}
+});
+
+Gremlin.defineStep('calleeToArguments', [Vertex, Pipe], {
+	_() // Callee node
+	.in('IS_AST_PARENT')
+	.out('IS_AST_PARENT')
+	.filter{it.type == 'ArgumentList'}
+	.out('IS_AST_PARENT')
+	.out('USE')
+});
+
+Gremlin.defineStep('calleeToReturnValue', [Vertex, Pipe], {
+	_() // Callee node
+	.statements()
+	.out('DEF')
+})
+
+Gremlin.defineStep('taintUpwards', [Vertex, Pipe], {
+	_() // Symbol node
+	.in('DEF')
+	.filter{it.isCFGNode == 'True'}
+	.out('USE')
+	.simplePath()
+	.loop(4){it.loops < 5}{true}
+	.dedup()
+});
+
+Gremlin.defineStep('taintDownwards', [Vertex, Pipe], {
+	_() // Symbol node
+	.in('USE')
+	.filter{it.isCFGNode == 'True'}
+	.out('DEF')
+	.simplePath()
+	.loop(4){it.loops < 5}{true}
+	.dedup()
 });
