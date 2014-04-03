@@ -135,7 +135,7 @@ class Callee(ASTNode):
     @staticmethod
     def lookup_callees_by_name(code):
         lucene_query = 'type:Callee AND code:"{}"'.format(code)
-        symbols = jutils.raw_lookup(lucene_query)
+        symbols = jutils.lookup(lucene_query)
         return map(lambda x : Symbol(x[0], x[1].get_properties()), symbols)
 
 class Symbol(Node):
