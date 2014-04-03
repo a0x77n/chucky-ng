@@ -18,20 +18,28 @@ class ConfigRecord(object):
         self.logger = logging.getLogger('chucky')
 
     def __str__(self):
-        s = '{} ({}) - {} {} [{}]'
-        s = s.format(
-                self.function,
-                self.function.node_id,
-                self.target_decl_type,
-                self.target_name,
-                self.target_type)
-        return s
+        if self.target_decl_type:
+            s = '{} ({}) - {} {} [{}]'
+            s = s.format(
+                    self.function,
+                    self.function.node_id,
+                    self.target_decl_type,
+                    self.target_name,
+                    self.target_type)
+            return s
+        else:
+            s = '{} ({}) - {} [{}]'
+            s = s.format(
+                    self.function,
+                    self.function.node_id,
+                    self.target_name,
+                    self.target_type)
+            return s
 
 class ConfigGenerator(object):
 
-    def __init__(self, identifier, identifier_decl_type, identifier_type, n_neighbors):
+    def __init__(self, identifier, identifier_type, n_neighbors):
         self.identifier = identifier
-        self.identifier_decl_type = identifier_decl_type
         self.identifier_type = identifier_type
         self.n_neighbors = n_neighbors
 
@@ -74,7 +82,7 @@ class ConfigGenerator(object):
                             self.n_neighbors)
                     configurations.append(configuration)
         elif self.identifier_type == 'parameter':
-            parameters = Identifier.lookup_parameter(self.identifier, self.identifier_decl_type)
+            parameters = Identifier.lookup_parameter(self.identifier)
             for parameter in parameters:
                 configuration = ConfigRecord(
                         parameter.function(),
@@ -84,7 +92,7 @@ class ConfigGenerator(object):
                         self.n_neighbors)
                 configurations.append(configuration)
         elif self.identifier_type == 'variable':
-            variables = Identifier.lookup_variables(self.identifier, self.identifier_decl_type)
+            variables = Identifier.lookup_variables(self.identifier)
             for variable in variables:
                 configuration = ConfigRecord(
                         variable.function(),

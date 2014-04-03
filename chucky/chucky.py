@@ -29,33 +29,25 @@ class Chucky():
         self.args = self.arg_parser.parse_args()
         self._config_logger()
         self._create_chucky_dir()
-        if len(self.args.identifier) > 1 and \
-                (self.args.identifier_type in ['parameter', 'variable']):
-            self.config_generator = ConfigGenerator(
-                    identifier = self.args.identifier[1],
-                    identifier_decl_type = self.args.identifier[0],
-                    identifier_type = self.args.identifier_type,
-                    n_neighbors = self.args.n_neighbors)
-        else:
-            self.config_generator = ConfigGenerator(
-                    identifier = self.args.identifier[0],
-                    identifier_decl_type = None,
-                    identifier_type = self.args.identifier_type,
-                    n_neighbors = self.args.n_neighbors)
+        self.config_generator = ConfigGenerator(
+                identifier = self.args.identifier,
+                identifier_type = self.args.identifier_type,
+                n_neighbors = self.args.n_neighbors)
         self.engine = ChuckyEngine(self.args.chucky_dir)
 
     def _init_arg_parser(self):
         self.arg_parser = argparse.ArgumentParser(description=DESCRIPTION)
         self.arg_parser.add_argument(
                 'identifier',
-                nargs = '+')
+                help = """The name of the identifier 
+                (function name or source/sink name)""")
         self.arg_parser.add_argument(
                 '-i', '--identifier-type',
                 action = 'store',
                 default = 'function',
                 choices = ['function','callee', 'parameter', 'variable'],
                 help = """The type of identifier the positional argument
-                `identifier` refers to (function, symbol).""")
+                `identifier` refers to.""")
         self.arg_parser.add_argument(
                 '-n', '--n-neighbors',
                 action = 'store',
