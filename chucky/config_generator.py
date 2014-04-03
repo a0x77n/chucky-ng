@@ -94,7 +94,7 @@ class ConfigGenerator(object):
                         self.n_neighbors)
                 configurations.append(configuration)
         elif self.identifier_type == 'callee':
-            callees = callee.lookup_callees_by_name(self.identifier)
+            callees = Callee.lookup_callees_by_name(self.identifier)
             for callee in callees:
                 configuration = ConfigRecord(
                         callee.function(),
