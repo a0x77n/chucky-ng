@@ -22,6 +22,13 @@ Gremlin.defineStep('filterCallee', [Vertex, Pipe], {
         .back('callee')
 });
 
+Gremlin.defineStep('identifierToType', [Vertex, Pipe], {
+        _()
+        .parents()
+        .ithChildren('0')
+        .filter{it.type == 'IdentifierDeclType' || it.type == 'ParameterType'}
+});
+
 Gremlin.defineStep('symbolToUsingConditions', [Vertex, Pipe], {
 	_() // Symbol node
 	.in('USE', 'DEF')
@@ -39,10 +46,10 @@ Gremlin.defineStep('functionToAPISymbolNodes', [Vertex, Pipe], {
 
 Gremlin.defineStep('calleeToArguments', [Vertex, Pipe], {
 	_() // Callee node
-	.in('IS_AST_PARENT')
-	.out('IS_AST_PARENT')
-	.filter{it.type == 'ArgumentList'}
-	.out('IS_AST_PARENT')
+	.parents()
+	.ithChildren(0)
+	//.filter{it.type == 'ArgumentList'}
+        .children()
 	.out('USE')
 });
 

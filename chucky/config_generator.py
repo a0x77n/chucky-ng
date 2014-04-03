@@ -2,28 +2,36 @@ from joern_nodes import *
 
 import logging
 
-class ConfigRecord():
+PARAMETER = 'Parameter'
+VARIABLE = 'Variable'
+CALLEE = 'Callee'
+
+
+class ConfigRecord(object):
     
-    def __init__(self, function, target_name, target_type, n_neighbors):
+    def __init__(self, function, target_name, target_decl_type, target_type, n_neighbors):
         self.function = function
         self.target_name = target_name
+        self.target_decl_type = target_decl_type
         self.target_type = target_type
         self.n_neighbors = n_neighbors
         self.logger = logging.getLogger('chucky')
 
     def __str__(self):
-        s = '{} ({}) - {} [{}]'
+        s = '{} ({}) - {} {} [{}]'
         s = s.format(
                 self.function,
                 self.function.node_id,
+                self.target_decl_type,
                 self.target_name,
                 self.target_type)
         return s
 
 class ConfigGenerator(object):
 
-    def __init__(self, identifier, identifier_type, n_neighbors):
+    def __init__(self, identifier, identifier_decl_type, identifier_type, n_neighbors):
         self.identifier = identifier
+        self.identifier_decl_type = identifier_decl_type
         self.identifier_type = identifier_type
         self.n_neighbors = n_neighbors
 
@@ -32,28 +40,67 @@ class ConfigGenerator(object):
         if self.identifier_type == 'function':
             functions = Function.lookup_functions_by_name(self.identifier)
             for function in functions:
-                for parameter in set(map(lambda x : x.code, function.parameters())):
-                    configurations.append(
-                            ConfigRecord(function, parameter, 'Parameter', self.n_neighbors))
-                for variable in set(map(lambda x : x.code, function.variables())):
-                    configurations.append(
-                            ConfigRecord(function, variable, 'Variable', self.n_neighbors))
-                for callee in set(map(lambda x : x.code, function.callees())):
-                    configurations.append(
-                            ConfigRecord(function, callee, 'Callee', self.n_neighbors))
+                parameters = function.parameters()
+                parameters = map(lambda x : (x.code, x.declaration_type()), parameters)
+                parameters = set(parameters)
+                for parameter, parameter_type in parameters:
+                    configuration = ConfigRecord(
+                            function,
+                            parameter,
+                            parameter_type,
+                            PARAMETER,
+                            self.n_neighbors)
+                    configurations.append(configuration)
+                variables = function.variables()
+                variables = map(lambda x : (x.code, x.declaration_type()), variables)
+                variables = set(variables)
+                for variable, variable_type in variables:
+                    configuration = ConfigRecord(
+                            function,
+                            variable,
+                            variable_type,
+                            VARIABLE,
+                            self.n_neighbors)
+                    configurations.append(configuration)
+                callees = function.callees()
+                callees = map(lambda x : x.code, callees)
+                callees = set(callees)
+                for callee in callees:
+                    configuration = ConfigRecord(
+                            function,
+                            callee,
+                            None,
+                            CALLEE,
+                            self.n_neighbors)
+                    configurations.append(configuration)
         elif self.identifier_type == 'parameter':
-            functions = Function.lookup_functions_by_parameter(self.identifier)
-            for function in functions:
-                configurations.append(
-                        ConfigRecord(function, self.identifier, 'Parameter', self.n_neighbors))
+            parameters = Identifier.lookup_parameter(self.identifier, self.identifier_decl_type)
+            for parameter in parameters:
+                configuration = ConfigRecord(
+                        parameter.function(),
+                        parameter.code,
+                        parameter.declaration_type(),
+                        PARAMETER,
+                        self.n_neighbors)
+                configurations.append(configuration)
         elif self.identifier_type == 'variable':
-            functions = Function.lookup_functions_by_variable(self.identifier)
-            for function in functions:
-                configurations.append(
-                        ConfigRecord(function, self.identifier, 'Variable', self.n_neighbors))
+            variables = Identifier.lookup_variables(self.identifier, self.identifier_decl_type)
+            for variable in variables:
+                configuration = ConfigRecord(
+                        variable.function(),
+                        variable.code,
+                        variable.declaration_type(),
+                        VARIABLE,
+                        self.n_neighbors)
+                configurations.append(configuration)
         elif self.identifier_type == 'callee':
-            functions = Function.lookup_functions_by_callee(self.identifier)
-            for function in functions:
-                configurations.append(
-                        ConfigRecord(function, self.identifier, 'Callee', self.n_neighbors))
+            callees = callee.lookup_callees_by_name(self.identifier)
+            for callee in callees:
+                configuration = ConfigRecord(
+                        callee.function(),
+                        callee.code,
+                        None,
+                        CALLEE,
+                        self.n_neighbors)
+                configurations.append(configuration)
         return configurations

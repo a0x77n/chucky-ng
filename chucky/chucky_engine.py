@@ -37,11 +37,16 @@ class ChuckyEngine():
 
     def _relative_functions(self):
         if self.config.target_type == 'Parameter':
-            relatives = Function.lookup_functions_by_parameter(self.config.target_name)
+            relatives = Function.lookup_functions_by_parameter(
+                    self.config.target_name,
+                    self.config.target_decl_type)
         elif self.config.target_type == 'Variable':
-            relatives = Function.lookup_functions_by_variable(self.config.target_name)
+            relatives = Function.lookup_functions_by_variable(
+                    self.config.target_name,
+                    self.config.target_decl_type)
         elif self.config.target_type == 'Callee':
-            relatives = Function.lookup_functions_by_callee(self.config.target_name)
+            relatives = Function.lookup_functions_by_callee(
+                    self.config.target_name)
         return relatives
 
     def _relevant_conditions(self, function):

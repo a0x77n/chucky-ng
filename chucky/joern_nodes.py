@@ -70,27 +70,54 @@ class ASTNode(Node):
 
     @property
     def function_id(self):
-        return self.get_property('function_id')
+        return self.get_property('functionId')
 
 class Condition(ASTNode):
 
     def __init__(self, node_id, properties = None):
-        Node.__init__(self, node_id, properties) 
+        ASTNode.__init__(self, node_id, properties) 
 
 class Parameter(ASTNode):
 
     def __init__(self, node_id, properties = None):
-        Node.__init__(self, node_id, properties) 
+        ASTNode.__init__(self, node_id, properties) 
 
 class Identifier(ASTNode):
 
     def __init__(self, node_id, properties = None):
-        Node.__init__(self, node_id, properties) 
+        ASTNode.__init__(self, node_id, properties) 
+
+    def declaration_type(self):
+        traversal = 'identifierToType()'
+        projection = ['code']
+        result = jutils.raw_lookup(self.node_selection, traversal, projection)
+        if result:
+            return result[0][0]
+        else:
+            return None
+
+    @staticmethod
+    def lookup_parameter(code, decl_type = None):
+        lucene_query = 'type:Parameter'
+        traversal = 'ithChildren(\'1\').filter{{it.code == \'{}\'}}'.format(code)
+        if decl_type:
+            traversal += '.as(\'identifier\').identifierToType().filter{{it.code == \'{}\'}}.back(\'identifier\')'.format(decl_type)
+        result = jutils.lookup(lucene_query, traversal)
+        return map(lambda x : Identifier(x[0], x[1].get_properties()), result)
+
+    @staticmethod
+    def lookup_variable(code, decl_type = None):
+        lucene_query = 'type:IdentifierDecl'
+        traversal = 'ithChildren(\'1\').filter{{it.code == \'{}\'}}'.format(code)
+        if decl_type:
+            traversal += '.as(\'identifier\').identifierToType().filter{{it.code == \'{}\'}}.back(\'identifier\')'.format(decl_type)
+        result = jutils.lookup(lucene_query, traversal)
+        return map(lambda x : Identifier(x[0], x[1].get_properties()), result)
 
 class Callee(ASTNode):
 
     def __init__(self, node_id, properties = None):
-        Node.__init__(self, node_id, properties) 
+        ASTNode.__init__(self, node_id, properties) 
 
     def __str__(self):
         return '{}'.format(self.code)
@@ -202,16 +229,22 @@ class Function(Node):
         return map(lambda x : Function(x[0], x[1]), result)
 
     @staticmethod
-    def lookup_functions_by_parameter(code):
-        lucene_query = 'type:Identifier AND code:"{}"'.format(code)
-        traversal = 'filterParameters().functions().dedup()'
+    def lookup_functions_by_parameter(code, decl_type = None):
+        lucene_query = 'type:Parameter'
+        traversal = 'ithChildren(\'1\').filter{{it.code == \'{}\'}}'.format(code)
+        if decl_type:
+            traversal += '.identifierToType().filter{{it.code == \'{}\'}}'.format(decl_type)
+        traversal += '.functions().dedup()'
         result = jutils.lookup(lucene_query, traversal)
         return map(lambda x : Function(x[0], x[1]), result)
 
     @staticmethod
-    def lookup_functions_by_variable(code):
-        lucene_query = 'type:Identifier AND code:"{}"'.format(code)
-        traversal = 'filterVariables().functions().dedup()'
+    def lookup_functions_by_variable(code, decl_type = None):
+        lucene_query = 'type:IdentifierDecl'
+        traversal = 'ithChildren(\'1\').filter{{it.code == \'{}\'}}'.format(code)
+        if decl_type:
+            traversal += '.identifierToType().filter{{it.code == \'{}\'}}'.format(decl_type)
+        traversal += '.functions().dedup()'
         result = jutils.lookup(lucene_query, traversal)
         return map(lambda x : Function(x[0], x[1]), result)
 

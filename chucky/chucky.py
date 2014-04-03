@@ -29,16 +29,26 @@ class Chucky():
         self.args = self.arg_parser.parse_args()
         self._config_logger()
         self._create_chucky_dir()
-        self.config_generator = ConfigGenerator(
-                self.args.identifier,
-                self.args.identifier_type,
-                self.args.n_neighbors)
+        if len(self.args.identifier) > 1 and \
+                (self.args.identifier_type in ['parameter', 'variable']):
+            self.config_generator = ConfigGenerator(
+                    identifier = self.args.identifier[1],
+                    identifier_decl_type = self.args.identifier[0],
+                    identifier_type = self.args.identifier_type,
+                    n_neighbors = self.args.n_neighbors)
+        else:
+            self.config_generator = ConfigGenerator(
+                    identifier = self.args.identifier[0],
+                    identifier_decl_type = None,
+                    identifier_type = self.args.identifier_type,
+                    n_neighbors = self.args.n_neighbors)
         self.engine = ChuckyEngine(self.args.chucky_dir)
 
     def _init_arg_parser(self):
         self.arg_parser = argparse.ArgumentParser(description=DESCRIPTION)
         self.arg_parser.add_argument(
-                'identifier')
+                'identifier',
+                nargs = '+')
         self.arg_parser.add_argument(
                 '-i', '--identifier-type',
                 action = 'store',
