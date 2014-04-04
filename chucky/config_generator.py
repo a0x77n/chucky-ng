@@ -92,7 +92,7 @@ class ConfigGenerator(object):
                         self.n_neighbors)
                 configurations.append(configuration)
         elif self.identifier_type == 'variable':
-            variables = Identifier.lookup_variables(self.identifier)
+            variables = Identifier.lookup_variable(self.identifier)
             for variable in variables:
                 configuration = ConfigRecord(
                         variable.function(),
