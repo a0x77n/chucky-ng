@@ -207,4 +207,4 @@ class ChuckyEngine():
         else:
             #pass
             self.logger.debug('Cleaning up.')
-            # shutil.rmtree(self.workingdir)
+            shutil.rmtree(self.workingdir)
