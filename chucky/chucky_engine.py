@@ -2,6 +2,7 @@ from demux_tool import DemuxTool
 from joern_nodes import *
 from expression_normalizer import ExpressionNormalizer
 from symbol_tainter import SymbolTainter
+from jutils import jutils
 
 import logging
 import tempfile
@@ -18,6 +19,8 @@ class ChuckyEngine():
         self.cachedir = os.path.join(self.basedir, 'cache')
         self.api_symbol_cache = DemuxTool(self.cachedir)
         self.logger = logging.getLogger('chucky')
+
+        jutils.connectToDatabase()
 
     def _cache_api_symbols(self, function):
         for api_symbol in function.api_symbol_nodes():
@@ -142,15 +145,17 @@ class ChuckyEngine():
                 self.logger.debug('%s %+1.5f %s.', func, float(score), feat)
         return results
 
-    def analyze(self, config):
-
-        self.config = config
-
-        # create working environment
+    def _createWorkingEnvironment(self):
+        
         self.workingdir = tempfile.mkdtemp(dir=self.basedir)
         self.bagdir = os.path.join(self.workingdir, 'bag')
         self.exprdir = os.path.join(self.workingdir, 'exp')
         os.makedirs(os.path.join(self.bagdir, 'data'))
+
+    def analyze(self, config):
+
+        self.config = config
+        self._createWorkingEnvironment()
         expr_saver = DemuxTool(self.exprdir)
 
         self.logger.debug('Working directory is %s.', self.workingdir)
