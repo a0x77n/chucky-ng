@@ -113,6 +113,11 @@ class Chucky():
         self.logger.addHandler(console_handler)
         self.logger.addHandler(file_handler)
 
+    """
+    Generates configuration (list of ConfigRecords) and asks
+    the engine to perform an analysis for each ConfigRecord.
+    """
+
     def execute(self):
         configurations = self.config_generator.generate()
         n_configurations = len(configurations)

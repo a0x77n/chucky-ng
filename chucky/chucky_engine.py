@@ -47,6 +47,7 @@ class ChuckyEngine():
         elif self.config.target_type == 'Callee':
             relatives = Function.lookup_functions_by_callee(
                     self.config.target_name)
+        
         return relatives
 
     def _relevant_conditions(self, function):
@@ -85,10 +86,10 @@ class ChuckyEngine():
             return set()
 
     def _create_api_symbol_embedding(self):
-        config = 'sally -q -c sally.cfg'
-        config = config + ' --hash_file {}/feats.gz --vect_embed tfidf --tfidf_file {}/tfidf.fv'
+        config = 'sally -q -c sally.cfg '
+        config = config + ' --hash_file {}/feats.gz --vect_embed=cnt'
         config = config.format(self.bagdir, self.bagdir)
-        inputdir = '{}/data'
+        inputdir = '{}/data/'
         inputdir = inputdir.format(self.bagdir)
         outfile = '{}/embedding.libsvm'
         outfile = outfile.format(self.bagdir)
@@ -125,10 +126,10 @@ class ChuckyEngine():
         return neighbors
 
     def _anomaly_rating(self):
-        command = 'python ../python/anomaly_score.py -e -d {dir} -f {dir}/TOC'
+        command = "echo %d |" % (self.config.function.node_id)
+        command += 'python ../python/anomaly_score.py -e -d {dir}'
         command = command.format(dir = self.exprdir)
-        args = shlex.split(command)
-        output = subprocess.check_output(args)
+        output = subprocess.check_output(command, shell=True)
 
         results = {}
         for line in output.strip().split('\n'):

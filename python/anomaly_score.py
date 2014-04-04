@@ -42,16 +42,18 @@ class AnomalyScore(PipeTool):
     	return self.calculateDistance(dataPointIndex)
     	
     def calculateDistance(self, index):
-    	if not self.emb.dExists():
-            self.emb.D = self.calculateCenterOfMass()
+    	
+        self.emb.D = self.calculateCenterOfMass(index)
         #print max((self.emb.D - self.emb.x[index]).data)
         distance = (self.emb.D - self.emb.x[index])
         for feat, score in zip(distance.indices, distance.data):
             feat_string = self.emb.rFeatTable[feat].replace('%20', ' ')
             print '{:+6.5f} {}'.format(score, feat_string)
 
-    def calculateCenterOfMass(self):
-       	return scipy.sparse.csr_matrix(self.emb.x.mean(axis=0))
+    def calculateCenterOfMass(self, index):
+        
+        X = scipy.sparse.vstack([self.emb.x[:index, :], self.emb.x[index+1:, :]])
+        return scipy.sparse.csr_matrix(X.mean(axis=0))
 
 if __name__ == '__main__':
     tool = AnomalyScore()
