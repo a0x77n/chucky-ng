@@ -126,10 +126,10 @@ class ChuckyEngine():
         return neighbors
 
     def _anomaly_rating(self):
-        command = 'python ../python/anomaly_score.py -e -d {dir} -f {dir}/TOC'
+        command = "echo %d |" % (self.config.function.node_id)
+        command += 'python ../python/anomaly_score.py -e -d {dir}'
         command = command.format(dir = self.exprdir)
-        args = shlex.split(command)
-        output = subprocess.check_output(args)
+        output = subprocess.check_output(command, shell=True)
 
         results = {}
         for line in output.strip().split('\n'):
@@ -207,4 +207,4 @@ class ChuckyEngine():
         else:
             #pass
             self.logger.debug('Cleaning up.')
-            shutil.rmtree(self.workingdir)
+            # shutil.rmtree(self.workingdir)

@@ -51,7 +51,7 @@ class AnomalyScore(PipeTool):
             print '{:+6.5f} {}'.format(score, feat_string)
 
     def calculateCenterOfMass(self):
-       	return scipy.sparse.csr_matrix(self.emb.x.mean(axis=0))
+        return scipy.sparse.csr_matrix(self.emb.x.mean(axis=0))
 
 if __name__ == '__main__':
     tool = AnomalyScore()
