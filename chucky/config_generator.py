@@ -9,6 +9,12 @@ CALLEE = 'Callee'
 
 class ConfigRecord(object):
     
+    # When implementing additional command-line flags, the
+    # constructor's parameter list is likely to become
+    # longer and longer.
+    # Suggested improvement: provide setters for each of the
+    # configurable fields and remove the constructor
+    
     def __init__(self, function, target_name, target_decl_type, target_type, n_neighbors):
         self.function = function
         self.target_name = target_name
@@ -38,11 +44,20 @@ class ConfigRecord(object):
 
 class ConfigGenerator(object):
 
+    # Suggested improvement: see ConfigRecord
+    
     def __init__(self, identifier, identifier_type, n_neighbors):
         self.identifier = identifier
         self.identifier_type = identifier_type
         self.n_neighbors = n_neighbors
 
+    """
+    Generates a suitable configuration based on the objects
+    internal state.
+
+    @returns a list of ConfigRecords.
+    """
+    
     def generate(self):
         configurations = []
         if self.identifier_type == 'function':

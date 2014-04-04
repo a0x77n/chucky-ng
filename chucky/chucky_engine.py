@@ -47,6 +47,7 @@ class ChuckyEngine():
         elif self.config.target_type == 'Callee':
             relatives = Function.lookup_functions_by_callee(
                     self.config.target_name)
+        
         return relatives
 
     def _relevant_conditions(self, function):
@@ -85,10 +86,10 @@ class ChuckyEngine():
             return set()
 
     def _create_api_symbol_embedding(self):
-        config = 'sally -q -c sally.cfg'
-        config = config + ' --hash_file {}/feats.gz --vect_embed tfidf --tfidf_file {}/tfidf.fv'
+        config = 'sally -q -c sally.cfg '
+        config = config + ' --hash_file {}/feats.gz --vect_embed=cnt'
         config = config.format(self.bagdir, self.bagdir)
-        inputdir = '{}/data'
+        inputdir = '{}/data/'
         inputdir = inputdir.format(self.bagdir)
         outfile = '{}/embedding.libsvm'
         outfile = outfile.format(self.bagdir)
