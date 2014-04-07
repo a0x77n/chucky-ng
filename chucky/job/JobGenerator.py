@@ -1,4 +1,5 @@
 from joern_nodes import *
+from job.Job import ChuckyJob
 
 import logging
 
@@ -6,45 +7,14 @@ PARAMETER = 'Parameter'
 VARIABLE = 'Variable'
 CALLEE = 'Callee'
 
+"""
+Creates a list of jobs for Chucky Engine based
+on user queries.
+"""
 
-class ConfigRecord(object):
-    
-    # When implementing additional command-line flags, the
-    # constructor's parameter list is likely to become
-    # longer and longer.
-    # Suggested improvement: provide setters for each of the
-    # configurable fields and remove the constructor
-    
-    def __init__(self, function, target_name, target_decl_type, target_type, n_neighbors):
-        self.function = function
-        self.target_name = target_name
-        self.target_decl_type = target_decl_type
-        self.target_type = target_type
-        self.n_neighbors = n_neighbors
-        self.logger = logging.getLogger('chucky')
+class JobGenerator(object):
 
-    def __str__(self):
-        if self.target_decl_type:
-            s = '{} ({}) - {} {} [{}]'
-            s = s.format(
-                    self.function,
-                    self.function.node_id,
-                    self.target_decl_type,
-                    self.target_name,
-                    self.target_type)
-            return s
-        else:
-            s = '{} ({}) - {} [{}]'
-            s = s.format(
-                    self.function,
-                    self.function.node_id,
-                    self.target_name,
-                    self.target_type)
-            return s
-
-class ConfigGenerator(object):
-
-    # Suggested improvement: see ConfigRecord
+    # Suggested improvement: see ChuckyJob
     
     def __init__(self, identifier, identifier_type, n_neighbors):
         self.identifier = identifier
@@ -67,7 +37,7 @@ class ConfigGenerator(object):
                 parameters = map(lambda x : (x.code, x.declaration_type()), parameters)
                 parameters = set(parameters)
                 for parameter, parameter_type in parameters:
-                    configuration = ConfigRecord(
+                    configuration = ChuckyJob(
                             function,
                             parameter,
                             parameter_type,
@@ -78,7 +48,7 @@ class ConfigGenerator(object):
                 variables = map(lambda x : (x.code, x.declaration_type()), variables)
                 variables = set(variables)
                 for variable, variable_type in variables:
-                    configuration = ConfigRecord(
+                    configuration = ChuckyJob(
                             function,
                             variable,
                             variable_type,
@@ -89,7 +59,7 @@ class ConfigGenerator(object):
                 callees = map(lambda x : x.code, callees)
                 callees = set(callees)
                 for callee in callees:
-                    configuration = ConfigRecord(
+                    configuration = ChuckyJob(
                             function,
                             callee,
                             None,
@@ -99,7 +69,7 @@ class ConfigGenerator(object):
         elif self.identifier_type == 'parameter':
             parameters = Identifier.lookup_parameter(self.identifier)
             for parameter in parameters:
-                configuration = ConfigRecord(
+                configuration = ChuckyJob(
                         parameter.function(),
                         parameter.code,
                         parameter.declaration_type(),
@@ -109,7 +79,7 @@ class ConfigGenerator(object):
         elif self.identifier_type == 'variable':
             variables = Identifier.lookup_variables(self.identifier)
             for variable in variables:
-                configuration = ConfigRecord(
+                configuration = ChuckyJob(
                         variable.function(),
                         variable.code,
                         variable.declaration_type(),
@@ -119,7 +89,7 @@ class ConfigGenerator(object):
         elif self.identifier_type == 'callee':
             callees = Callee.lookup_callees_by_name(self.identifier)
             for callee in callees:
-                configuration = ConfigRecord(
+                configuration = ChuckyJob(
                         callee.function(),
                         callee.code,
                         None,
