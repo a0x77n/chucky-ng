@@ -1,6 +1,7 @@
 
 import tempfile
 import os.path
+import shutil
 
 class ChuckyWorkingEnvironment():
     
@@ -16,5 +17,4 @@ class ChuckyWorkingEnvironment():
         self.logger.debug('Working directory is %s.', self.workingdir)
     
     def destroy(self):
-        pass
-        # shutil.rmtree(self.workingdir) # clean up
+        shutil.rmtree(self.workingdir) # clean up
