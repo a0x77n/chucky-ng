@@ -1,5 +1,5 @@
 from joern_nodes import *
-from jutils import jutils
+from JoernInterface import jutils
 
 import logging
 

@@ -4,7 +4,8 @@ from joern_nodes import *
 from nearestNeighbor.FunctionSelector import FunctionSelector
 from expression_normalizer import ExpressionNormalizer
 from symbol_tainter import SymbolTainter
-from jutils import jutils
+from JoernInterface import jutils
+
 
 import logging
 import shlex
@@ -109,6 +110,9 @@ class ChuckyEngine():
         conditions = set([c for sublist in conditions for c in sublist])
         return conditions
 
+    """
+    Get arguments of function
+    """
     def _arguments(self, function):
         if self.job.getSymbolType() == 'Callee':
             callees = function.lookup_callees_by_name(self.job.getSymbolName())

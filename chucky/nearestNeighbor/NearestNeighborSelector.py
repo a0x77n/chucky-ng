@@ -8,12 +8,12 @@ class NearestNeighborSelector:
     def __init__(self, embeddingDir):
         self.bagdir = embeddingDir
     
-    # FIXME: knn.py offers a python-class so we don't 
+    # FIXME: knn.JoernInterface offers a python-class so we don't 
     # have to make a call via the shell here
     
     """
     Determine k nearest neighbors for self.job.function.node_id
-    by calling knn.py
+    by calling knn.JoernInterface
     """
     def getKNearestNeighbors(self, nodeId, k):
         command = 'knn.py -k {n_neighbors} --dirname {bagdir}'

@@ -1,5 +1,4 @@
-import py2neo.neo4j
-from jutils import jutils
+from JoernInterface import jutils
 
 class Node(object):
 

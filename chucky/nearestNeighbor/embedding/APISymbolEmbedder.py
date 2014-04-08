@@ -2,6 +2,7 @@ from nearestNeighbor.embedding.SallyBasedEmbedder import SallyBasedEmbedder
 from nearestNeighbor.embedding.SallyDataDirectoryCreator import SallyDataDirectoryCreator
 
 import os
+from nearestNeighbor.embedding.FunctionAPISymbols import FunctionAPISymbols
 
 class APISymbolEmbedder:
     
@@ -17,5 +18,6 @@ class APISymbolEmbedder:
     
     def embed(self, functions):
          
+        functions = [FunctionAPISymbols(x) for x in functions]
         self.dataDirCreator.create(functions)
         self.embedder.embed(self.outputdir)

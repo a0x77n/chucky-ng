@@ -34,7 +34,7 @@ class SallyDataStore:
                             str(number))
 
     def getDataPointNumberForFunction(self, func):
-        return self.toc[int(func.node_id)]
+        return self.toc[func.getKey()]
     
     
     def _openTOC(self):
@@ -66,13 +66,14 @@ class SallyDataStore:
         # function that we call here. Same goes
         # for the ids.
         
-        for api_symbol in func.api_symbol_nodes():
-            f.write(str(api_symbol) + '\n')
+        for feature in func.getFeatures():
+            f.write(str(feature) + '\n')
         f.close()
     
     def _writeToTOC(self, func):
-        self.toc[int(func.node_id)] = len(self.toc)
-        self.tocFile.write(str(func.node_id) + '\n')
+        self.toc[func.getKey()] = len(self.toc)
+        self.tocFile.write(str(func.getKey()) + '\n')
     
     def _isFunctionCached(self, func):
-        return func.node_id in self.toc
+        return func.getKey() in self.toc
+    

@@ -33,8 +33,8 @@ class SallyDataDirectoryCreator:
         target = os.path.join(self.outputdir, 'data', str(len(self.toc)))
         os.symlink(os.path.abspath(source),os.path.abspath(target))
     
-        self.tocFile.write(str(func.node_id) + '\n')
-        self.toc[int(func.node_id)] = len(self.toc)
+        self.tocFile.write(str(func.getKey()) + '\n')
+        self.toc[func.getKey()] = len(self.toc)
     
     def _initializeOutputDir(self):
 
