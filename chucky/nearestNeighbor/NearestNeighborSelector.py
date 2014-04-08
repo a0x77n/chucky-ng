@@ -1,23 +1,56 @@
 
 import subprocess
 import shlex
-from joern_nodes import Function
+import os.path
 
+from nearestNeighbor.APISymbolEmbedder import APISymbolEmbedder
+from nearestNeighbor.FunctionSelector import FunctionSelector
+from joernInterface.nodes.Function import Function
+
+"""
+Employs a FunctionSelector and an embedder
+to first embed a set of functions and then
+determine the k nearest neighbors to a given function.
+"""
 class NearestNeighborSelector:
     
-    def __init__(self, embeddingDir):
-        self.bagdir = embeddingDir
+    """
+    @param basedir: directory for temporary files. We assume
+                    that the cache lives at $basedir/cache
     
-    # FIXME: knn.JoernInterface offers a python-class so we don't 
+    @param embeddingDir: the directory to store the embedding.    
+    """
+    
+    def __init__(self, basedir, embeddingDir):
+        self.embeddingDir = embeddingDir
+        self.k = 10
+        cachedir = os.path.join(basedir, "cache")
+        self.embedder = APISymbolEmbedder(cachedir, embeddingDir)
+        self.functionSelector = FunctionSelector()
+    
+    
+    def setK(self, k):
+        self.k = k
+    
+    """
+    Get nearest neighbors of function with id 'funcId' that make
+    use of the symbol 'symbol'
+    """
+    def getNearestNeighbors(self, funcId, symbol):
+        
+        relatives = self.functionSelector.selectFunctionsUsingSymbol(symbol)
+        if len(relatives) < self.k:
+            return []
+
+        self.embedder.embed(relatives)
+        return self._nearestNeighbors(funcId, self.k)
+    
+    # FIXME: knn.py offers a python-class so we don't 
     # have to make a call via the shell here
     
-    """
-    Determine k nearest neighbors for self.job.function.node_id
-    by calling knn.JoernInterface
-    """
-    def getKNearestNeighbors(self, nodeId, k):
+    def _nearestNeighbors(self, nodeId, k):
         command = 'knn.py -k {n_neighbors} --dirname {bagdir}'
-        command = command.format(n_neighbors=k, bagdir=self.bagdir)
+        command = command.format(n_neighbors=k, bagdir=self.embeddingDir)
         args = shlex.split(command)
         knn = subprocess.Popen(
                 args,

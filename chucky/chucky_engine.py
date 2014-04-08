@@ -1,10 +1,7 @@
 from demux_tool import DemuxTool
-from joern_nodes import *
-
-from nearestNeighbor.FunctionSelector import FunctionSelector
 from expression_normalizer import ExpressionNormalizer
 from symbol_tainter import SymbolTainter
-from JoernInterface import jutils
+from joernInterface.JoernInterface import jutils
 
 
 import logging
@@ -13,7 +10,6 @@ import subprocess
 
 from nearestNeighbor.NearestNeighborSelector import NearestNeighborSelector
 from ChuckyWorkingEnvironment import ChuckyWorkingEnvironment
-from nearestNeighbor.embedding.APISymbolEmbedder import APISymbolEmbedder
 
 class ChuckyEngine():
 
@@ -28,8 +24,6 @@ class ChuckyEngine():
         self.job = job
         
         self.workingEnv = ChuckyWorkingEnvironment(self.basedir, self.logger)
-        self.apiSymbolEmbedder = APISymbolEmbedder(self.workingEnv)
-        self.functionSelector = FunctionSelector()
         
         try:            
             nearestNeighbors = self._getKNearestNeighbors()
@@ -56,21 +50,10 @@ class ChuckyEngine():
     """
     def _getKNearestNeighbors(self):
         
-        # get relatives, i.e., functions using the same symbol. 
         symbol = self.job.getSymbol()
-        relatives = self.functionSelector.selectFunctionsUsingSymbol(symbol)
-              
-        self.logger.debug(
-                '%s functions using the symbol %s.',
-                len(relatives), self.job.getSymbolName())
-
-        if len(relatives) < self.job.n_neighbors:
-            return []
-
-        self.apiSymbolEmbedder.embed(relatives)
-        self.knn = NearestNeighborSelector(self.workingEnv.bagdir)
-        
-        return self.knn.getKNearestNeighbors(self.job.function.node_id, self.job.n_neighbors)
+        self.knn = NearestNeighborSelector(self.workingEnv.basedir, self.workingEnv.bagdir)
+        self.knn.setK(self.job.n_neighbors)
+        return self.knn.getNearestNeighbors(self.job.function.node_id, symbol)
     
     def _calculateCheckModels(self, nearestNeighbors):
         
@@ -82,6 +65,8 @@ class ChuckyEngine():
             argset = self._arguments(neighbor)
             retset = self._return_value(neighbor)
             expr_normalizer = ExpressionNormalizer(argset, retset)
+            
+            
             for condition in conditions:
                 root_expr = condition.children()[0]
                 self.logger.debug('Normalizing condition ( {} ) ({})'.format(root_expr, root_expr.node_id))
@@ -163,12 +148,12 @@ class ChuckyEngine():
                 self.logger.debug('%s %+1.5f %s.', func, float(score), feat)
         return results
 
-    def _outputResult(self, result, getKNearestNeighbors):
+    def _outputResult(self, result, _nearestNeighbors):
         
         sorted_result = sorted(result.items(), key = lambda x : max(x[1])[0], reverse = True)
         for i, (function, data) in enumerate(sorted_result, 1):
             score, feat = max(data)
-            for neighbor in getKNearestNeighbors:
+            for neighbor in _nearestNeighbors:
                 if neighbor.node_id == function:
                     print '{:>3} {:< 6.5f}\t{:30}\t{:10}\t{}'.format(i, score, neighbor.name, function, feat)
     

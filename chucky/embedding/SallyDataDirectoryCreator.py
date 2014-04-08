@@ -1,4 +1,4 @@
-from nearestNeighbor.embedding.SallyDataStore import SallyDataStore
+from embedding.SallyDataStore import SallyDataStore
 import os
 
 class SallyDataDirectoryCreator:

@@ -1,5 +1,6 @@
-from joern_nodes import *
-from JoernInterface import jutils
+
+from joernInterface.JoernInterface import jutils
+from joernInterface.nodes.Symbol import Symbol
 
 import logging
 

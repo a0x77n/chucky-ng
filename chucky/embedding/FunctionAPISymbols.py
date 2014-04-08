@@ -1,5 +1,3 @@
-from joern_nodes import Function
-
 
 class FunctionAPISymbols:
     

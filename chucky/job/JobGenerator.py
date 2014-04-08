@@ -1,7 +1,8 @@
-from joern_nodes import *
 from job.Job import ChuckyJob
+from joernInterface.indexLookup.FunctionLookup import FunctionLookup
+from joernInterface.indexLookup.IdentifierLookup import IdentifierLookup
+from joernInterface.indexLookup.CalleeLookup import CalleeLookup
 
-import logging
 
 PARAMETER = 'Parameter'
 VARIABLE = 'Variable'
@@ -31,7 +32,7 @@ class JobGenerator(object):
     def generate(self):
         configurations = []
         if self.identifier_type == 'function':
-            functions = Function.lookup_functions_by_name(self.identifier)
+            functions = FunctionLookup.lookup_functions_by_name(self.identifier)
             for function in functions:
                 parameters = function.parameters()
                 parameters = map(lambda x : (x.code, x.declaration_type()), parameters)
@@ -67,7 +68,7 @@ class JobGenerator(object):
                             self.n_neighbors)
                     configurations.append(configuration)
         elif self.identifier_type == 'parameter':
-            parameters = Identifier.lookup_parameter(self.identifier)
+            parameters = IdentifierLookup.lookup_parameter(self.identifier)
             for parameter in parameters:
                 configuration = ChuckyJob(
                         parameter.function(),
@@ -77,7 +78,7 @@ class JobGenerator(object):
                         self.n_neighbors)
                 configurations.append(configuration)
         elif self.identifier_type == 'variable':
-            variables = Identifier.lookup_variables(self.identifier)
+            variables = IdentifierLookup.lookup_variable(self.identifier)
             for variable in variables:
                 configuration = ChuckyJob(
                         variable.function(),
@@ -87,7 +88,7 @@ class JobGenerator(object):
                         self.n_neighbors)
                 configurations.append(configuration)
         elif self.identifier_type == 'callee':
-            callees = Callee.lookup_callees_by_name(self.identifier)
+            callees = CalleeLookup.lookup_callees_by_name(self.identifier)
             for callee in callees:
                 configuration = ChuckyJob(
                         callee.function(),
