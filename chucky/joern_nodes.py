@@ -1,5 +1,5 @@
 import py2neo.neo4j
-import jutils
+from jutils import jutils
 
 class Node(object):
 

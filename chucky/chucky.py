@@ -1,6 +1,6 @@
 #!/usr/bin/env python2
 
-from config_generator import ConfigGenerator
+from job.JobGenerator import JobGenerator
 from chucky_engine import ChuckyEngine
 
 import logging
@@ -20,7 +20,7 @@ def n_neighbors(value):
         error_message = "N_NEIGHBORS must be greater than {}".format(MIN_N)
         raise argparse.ArgumentError(error_message)
     else:
-       return n
+        return n
 
 class Chucky():
 
@@ -29,7 +29,7 @@ class Chucky():
         self.args = self.arg_parser.parse_args()
         self._config_logger()
         self._create_chucky_dir()
-        self.config_generator = ConfigGenerator(
+        self.job_generator = JobGenerator(
                 identifier = self.args.identifier,
                 identifier_type = self.args.identifier_type,
                 n_neighbors = self.args.n_neighbors)
@@ -114,25 +114,26 @@ class Chucky():
         self.logger.addHandler(file_handler)
 
     """
-    Generates configuration (list of ConfigRecords) and asks
-    the engine to perform an analysis for each ConfigRecord.
+    Generates Jobs (list of ChuckyJobs) and asks
+    the engine to perform an analysis for each job.
     """
 
     def execute(self):
-        configurations = self.config_generator.generate()
-        n_configurations = len(configurations)
-        for i, configuration in enumerate(configurations, 1):
-            print 'Configuration ({}/{}): {}'.format(
+        jobs = self.job_generator.generate()
+        numberOfJobs = len(jobs)
+        
+        for i, job in enumerate(jobs, 1):
+            print 'Job ({}/{}): {}'.format(
                     i,
-                    n_configurations,
-                    configuration)
+                    numberOfJobs,
+                    job)
             if self.args.interactive:
-                choice = raw_input('Run configuration ([yes]/no/quit)? ').lower()
+                choice = raw_input('Run job ([yes]/no/quit)? ').lower()
                 if choice in ['n', 'no']:
                     continue
                 elif choice in ['q', 'quit']:
                     return
-            self.engine.analyze(configuration)
+            self.engine.analyze(job)
 
 if __name__ == '__main__':
     Chucky().execute()

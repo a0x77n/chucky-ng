@@ -1,75 +1,117 @@
 from demux_tool import DemuxTool
 from joern_nodes import *
+
+from nearestNeighbor.FunctionSelector import FunctionSelector
 from expression_normalizer import ExpressionNormalizer
 from symbol_tainter import SymbolTainter
+from jutils import jutils
 
 import logging
-import tempfile
-import sys
-import os
-import shutil
 import shlex
 import subprocess
+
+from nearestNeighbor.NearestNeighborSelector import NearestNeighborSelector
+from ChuckyWorkingEnvironment import ChuckyWorkingEnvironment
+from nearestNeighbor.embedding.APISymbolEmbedder import APISymbolEmbedder
 
 class ChuckyEngine():
 
     def __init__(self, basedir):
         self.basedir = basedir
-        self.cachedir = os.path.join(self.basedir, 'cache')
-        self.api_symbol_cache = DemuxTool(self.cachedir)
         self.logger = logging.getLogger('chucky')
 
-    def _cache_api_symbols(self, function):
-        for api_symbol in function.api_symbol_nodes():
-            self.logger.debug('Caching %s %s.', function, api_symbol.code)
-            self.api_symbol_cache.demux(function.node_id,  api_symbol.code)
+        jutils.connectToDatabase()
 
-    def _load_from_api_symbol_cache(self, function):
-        number = self.api_symbol_cache.toc[function]
-        source = os.path.join(self.cachedir, 'data', str(number))
-        target = os.path.join(self.bagdir, 'data', str(number))
-        os.symlink(os.path.abspath(source),os.path.abspath(target))
+    def analyze(self, job):
 
-    def _load_toc(self):
-        source = os.path.join(self.cachedir, 'TOC')
-        target = os.path.join(self.bagdir, 'TOC')
-        os.symlink(os.path.abspath(source),os.path.abspath(target))
-
-    def _relative_functions(self):
-        if self.config.target_type == 'Parameter':
-            relatives = Function.lookup_functions_by_parameter(
-                    self.config.target_name,
-                    self.config.target_decl_type)
-        elif self.config.target_type == 'Variable':
-            relatives = Function.lookup_functions_by_variable(
-                    self.config.target_name,
-                    self.config.target_decl_type)
-        elif self.config.target_type == 'Callee':
-            relatives = Function.lookup_functions_by_callee(
-                    self.config.target_name)
+        self.job = job
         
-        return relatives
+        self.workingEnv = ChuckyWorkingEnvironment(self.basedir, self.logger)
+        self.apiSymbolEmbedder = APISymbolEmbedder(self.workingEnv)
+        self.functionSelector = FunctionSelector()
+        
+        try:            
+            nearestNeighbors = self._getKNearestNeighbors()
+            
+            if nearestNeighbors == []:
+                self.logger.warning('Job skipped, no neighbors found')
+                self.workingEnv.destroy()
+                return
+
+            self._calculateCheckModels(nearestNeighbors)
+            result = self._anomaly_rating()
+            self._outputResult(result, nearestNeighbors)
+
+        except subprocess.CalledProcessError as e:
+            self.logger.error(e)
+            self.logger.error('Do not clean up.')
+        else:
+            self.logger.debug('Cleaning up.')
+            self.workingEnv.destroy()
+
+    """
+    Determine the k nearest neighbors for the
+    current job.
+    """
+    def _getKNearestNeighbors(self):
+        
+        # get relatives, i.e., functions using the same symbol. 
+        symbol = self.job.getSymbol()
+        relatives = self.functionSelector.selectFunctionsUsingSymbol(symbol)
+              
+        self.logger.debug(
+                '%s functions using the symbol %s.',
+                len(relatives), self.job.getSymbolName())
+
+        if len(relatives) < self.job.n_neighbors:
+            return []
+
+        self.apiSymbolEmbedder.embed(relatives)
+        self.knn = NearestNeighborSelector(self.workingEnv.bagdir)
+        
+        return self.knn.getKNearestNeighbors(self.job.function.node_id, self.job.n_neighbors)
+    
+    def _calculateCheckModels(self, nearestNeighbors):
+        
+        expr_saver = DemuxTool(self.workingEnv.exprdir)
+
+        for i, neighbor in enumerate(nearestNeighbors, 1):
+            self.logger.info('Processing %s (%s/%s).', neighbor, i, len(nearestNeighbors))
+            conditions = self._relevant_conditions(neighbor)
+            argset = self._arguments(neighbor)
+            retset = self._return_value(neighbor)
+            expr_normalizer = ExpressionNormalizer(argset, retset)
+            for condition in conditions:
+                root_expr = condition.children()[0]
+                self.logger.debug('Normalizing condition ( {} ) ({})'.format(root_expr, root_expr.node_id))
+                for expr in expr_normalizer.normalize_expression(root_expr):
+                    expr_saver.demux(neighbor.node_id, expr)
+            if not conditions:
+                # empty feature hack
+                expr_saver.demux(neighbor.node_id, None)
+
+        self._create_function_embedding()
 
     def _relevant_conditions(self, function):
         symbol_tainter = SymbolTainter()
-        if self.config.target_type == 'Callee':
+        if self.job.getSymbolType() == 'Callee':
             taintset = set()
-            callees = function.lookup_callees_by_name(self.config.target_name)
+            callees = function.lookup_callees_by_name(self.job.getSymbolName())
             for callee in callees:
                 for argument in callee.arguments():
                     taintset = taintset | symbol_tainter.taint_upwards(argument)
                 for return_value in callee.return_value():
                     taintset = taintset | symbol_tainter.taint_upwards(return_value)
         else:
-            symbol = function.lookup_symbol_by_name(self.config.target_name)
+            symbol = function.lookup_symbol_by_name(self.job.getSymbolName())
             taintset = symbol_tainter.taint(symbol)
         conditions = map(lambda x : x.traverse_to_using_conditions(), taintset)
         conditions = set([c for sublist in conditions for c in sublist])
         return conditions
 
     def _arguments(self, function):
-        if self.config.target_type == 'Callee':
-            callees = function.lookup_callees_by_name(self.config.target_name)
+        if self.job.getSymbolType() == 'Callee':
+            callees = function.lookup_callees_by_name(self.job.getSymbolName())
             arguments = map(lambda x : x.arguments(), callees)
             arguments = [arg for sublist in arguments for arg in sublist]
             return set(arguments)
@@ -77,58 +119,33 @@ class ChuckyEngine():
             return set()
 
     def _return_value(self, function):
-        if self.config.target_type == 'Callee':
-            callees = function.lookup_callees_by_name(self.config.target_name)
+        if self.job.getSymbolType() == 'Callee':
+            callees = function.lookup_callees_by_name(self.job.getSymbolName())
             arguments = map(lambda x : x.return_value(), callees)
             arguments = [arg for sublist in arguments for arg in sublist]
             return set(arguments)
         else:
             return set()
 
-    def _create_api_symbol_embedding(self):
-        config = 'sally -q -c sally.cfg '
-        config = config + ' --hash_file {}/feats.gz --vect_embed=cnt'
-        config = config.format(self.bagdir, self.bagdir)
-        inputdir = '{}/data/'
-        inputdir = inputdir.format(self.bagdir)
-        outfile = '{}/embedding.libsvm'
-        outfile = outfile.format(self.bagdir)
-        command = ' '.join([config, inputdir, outfile])
-        subprocess.check_call(shlex.split(command))
-
     def _create_function_embedding(self):
         config = 'sally -q -c sally.cfg'
         config = config + ' --hash_file {}/feats.gz --vect_embed bin'
-        config = config.format(self.exprdir)
+        config = config.format(self.workingEnv.exprdir)
         inputdir = '{}/data'
-        inputdir = inputdir.format(self.exprdir)
+        inputdir = inputdir.format(self.workingEnv.exprdir)
         outfile = '{}/embedding.libsvm'
-        outfile = outfile.format(self.exprdir)
+        outfile = outfile.format(self.workingEnv.exprdir)
         command = ' '.join([config, inputdir, outfile])
         subprocess.check_call(shlex.split(command))
 
-    def _neighborhood(self):
-        command = 'knn.py -k {n_neighbors} --dirname {bagdir}'
-        command = command.format(n_neighbors=self.config.n_neighbors, bagdir=self.bagdir)
-        args = shlex.split(command)
-        knn = subprocess.Popen(
-                args,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-        neighbors = []
-        (stdout, stderr) = knn.communicate(str(self.config.function.node_id))
-        returncode = knn.poll()
-        if returncode:
-            raise subprocess.CalledProcessError(returncode, command, stderr)
-        for neighbor in stdout.strip().split('\n'):
-            neighbors.append(Function(neighbor))
-        return neighbors
 
+    """
+    Determine anomaly score.
+    """
     def _anomaly_rating(self):
-        command = "echo %d |" % (self.config.function.node_id)
+        command = "echo %d |" % (self.job.function.node_id)
         command += 'python ../python/anomaly_score.py -e -d {dir}'
-        command = command.format(dir = self.exprdir)
+        command = command.format(dir = self.workingEnv.exprdir)
         output = subprocess.check_output(command, shell=True)
 
         results = {}
@@ -142,69 +159,12 @@ class ChuckyEngine():
                 self.logger.debug('%s %+1.5f %s.', func, float(score), feat)
         return results
 
-    def analyze(self, config):
-
-        self.config = config
-
-        # create working environment
-        self.workingdir = tempfile.mkdtemp(dir=self.basedir)
-        self.bagdir = os.path.join(self.workingdir, 'bag')
-        self.exprdir = os.path.join(self.workingdir, 'exp')
-        os.makedirs(os.path.join(self.bagdir, 'data'))
-        expr_saver = DemuxTool(self.exprdir)
-
-        self.logger.debug('Working directory is %s.', self.workingdir)
-
-        # get all relatives (functions using the given target) 
-        relatives = self._relative_functions()
-
-        self.logger.debug(
-                '%s functions using the symbol %s.',
-                len(relatives), self.config.target_name)
-
-        if len(relatives) < self.config.n_neighbors:
-            self.logger.warning('Configuration skipped.')
-            shutil.rmtree(self.workingdir) # clean up
-            return
-
-        # extract and embedd api symbols for each relative
-        for i, relative in enumerate(relatives, 1):
-            self.logger.info('Processing %s (%s/%s).', relative, i, len(relatives))
-            if relative.node_id not in self.api_symbol_cache.toc:
-                self._cache_api_symbols(relative)
-            self._load_from_api_symbol_cache(relative.node_id)
-        self._load_toc()
-        self._create_api_symbol_embedding()
-
-        try:
-            # process neighbors
-            neighborhood = self._neighborhood()
-            for i, neighbor in enumerate(neighborhood, 1):
-                self.logger.info('Processing %s (%s/%s).', neighbor, i, len(neighborhood))
-                conditions = self._relevant_conditions(neighbor)
-                argset = self._arguments(neighbor)
-                retset = self._return_value(neighbor)
-                expr_normalizer = ExpressionNormalizer(argset, retset)
-                for condition in conditions:
-                    root_expr = condition.children()[0]
-                    self.logger.debug('Normalizing condition ( {} ) ({})'.format(root_expr, root_expr.node_id))
-                    for expr in expr_normalizer.normalize_expression(root_expr):
-                        expr_saver.demux(neighbor.node_id, expr)
-                if not conditions:
-                    # empty feature hack
-                    expr_saver.demux(neighbor.node_id, None)
-            self._create_function_embedding()
-            result = self._anomaly_rating()
-            sorted_result = sorted(result.items(), key = lambda x : max(x[1])[0], reverse = True)
-            for i, (function, data) in enumerate(sorted_result, 1):
-                score, feat = max(data)
-                for neighbor in neighborhood:
-                    if neighbor.node_id == function:
-                        print '{:>3} {:< 6.5f}\t{:30}\t{:10}\t{}'.format(i, score, neighbor.name, function, feat)
-        except subprocess.CalledProcessError as e:
-            self.logger.error(e)
-            self.logger.error('Do not clean up.')
-        else:
-            #pass
-            self.logger.debug('Cleaning up.')
-            shutil.rmtree(self.workingdir)
+    def _outputResult(self, result, getKNearestNeighbors):
+        
+        sorted_result = sorted(result.items(), key = lambda x : max(x[1])[0], reverse = True)
+        for i, (function, data) in enumerate(sorted_result, 1):
+            score, feat = max(data)
+            for neighbor in getKNearestNeighbors:
+                if neighbor.node_id == function:
+                    print '{:>3} {:< 6.5f}\t{:30}\t{:10}\t{}'.format(i, score, neighbor.name, function, feat)
+    
