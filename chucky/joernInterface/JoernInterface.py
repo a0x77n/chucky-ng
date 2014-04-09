@@ -26,5 +26,6 @@ class jutils:
         else:
             command = '.'.join([node_selection, traversal, transform])
         
+        print command
         return jutils.joern.runGremlinQuery(command)
 

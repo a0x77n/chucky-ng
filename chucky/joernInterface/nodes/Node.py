@@ -6,9 +6,7 @@ class Node(object):
         self.node_id = node_id
         self.properties = properties
         self.node_selection = 'g.v("{}")'.format(self.node_id)
-        if not self.properties:
-            self.load_properties()
-
+        
     def __str__(self):
         return str(self.node_id)
 
@@ -29,6 +27,10 @@ class Node(object):
         self.properties = node.get_properties()
 
     def get_property(self, label):
+        
+        if not self.properties:
+            self.load_properties()        
+        
         if label in self.properties:
             return self.properties[label]
         else:
