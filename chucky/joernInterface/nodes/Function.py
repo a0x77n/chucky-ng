@@ -36,23 +36,25 @@ class Function(Node):
         symbols = jutils.lookup(lucene_query, traversal = traversal)
         return map(lambda x : Identifier(x[0], x[1].get_properties()), symbols)
 
-    def lookup_symbol_by_name(self, code):
-        lucene_query = 'type:Symbol AND functionId:"{}" AND code:"{}"'
-        lucene_query = lucene_query.format(self.node_id, code)
-        result = jutils.lookup(lucene_query)
-        return Symbol(result[0][0], result[0][1].get_properties())
-
-    def lookup_callees_by_name(self, code):
-        lucene_query = 'type:Callee AND functionId:"{}" AND code:"{}"'
-        lucene_query = lucene_query.format(self.node_id, code)
-        result = jutils.lookup(lucene_query)
-        return map(lambda x : Callee(x[0], x[1].get_properties()), result)
-
     def api_symbol_nodes(self):
         traversal = 'functionToAPISymbolNodes()'
         result = jutils.raw_lookup(self.node_selection, traversal)
         return map(lambda x : ASTNode(x[0], x[1].get_properties()), result)
 
+    
+    def symbolsByName(self, code):
+        lucene_query = 'type:Symbol AND functionId:"{}" AND code:"{}"'
+        lucene_query = lucene_query.format(self.node_id, code)
+        result = jutils.lookup(lucene_query)
+        return Symbol(result[0][0], result[0][1].get_properties())
+
+    
+    def calleesByName(self, code):
+        lucene_query = 'type:Callee AND functionId:"{}" AND code:"{}"'
+        lucene_query = lucene_query.format(self.node_id, code)
+        result = jutils.lookup(lucene_query)
+        return map(lambda x : Callee(x[0], x[1].get_properties()), result)
+    
     @property
     def name(self):
         return self.get_property('name')

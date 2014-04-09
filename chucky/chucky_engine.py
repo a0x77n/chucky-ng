@@ -1,6 +1,5 @@
 from demux_tool import DemuxTool
-from expression_normalizer import ExpressionNormalizer
-from symbol_tainter import SymbolTainter
+from conditionNormalization.expression_normalizer import ExpressionNormalizer
 from joernInterface.JoernInterface import jutils
 
 
@@ -11,6 +10,9 @@ import subprocess
 from nearestNeighbor.NearestNeighborSelector import NearestNeighborSelector
 from ChuckyWorkingEnvironment import ChuckyWorkingEnvironment
 from nearestNeighbor.FunctionSelector import FunctionSelector
+from joernInterface.indexLookup.FunctionLookup import FunctionLookup
+from conditionSelection.ConditionSelector import ConditionSelector
+from conditionNormalization.ConditionNormalizer import ConditionNormalizer
 
 class ChuckyEngine():
 
@@ -23,7 +25,6 @@ class ChuckyEngine():
     def analyze(self, job):
 
         self.job = job
-        
         self.workingEnv = ChuckyWorkingEnvironment(self.basedir, self.logger)
         
         try:            
@@ -60,66 +61,29 @@ class ChuckyEngine():
         
         return self.knn.getNearestNeighbors(self.job.function, symbolUsers)
     
-    def _calculateCheckModels(self, nearestNeighbors):
+    def _calculateCheckModels(self, symbolUsers):
         
         expr_saver = DemuxTool(self.workingEnv.exprdir)
 
-        for i, neighbor in enumerate(nearestNeighbors, 1):
-            self.logger.info('Processing %s (%s/%s).', neighbor, i, len(nearestNeighbors))            
-            conditions = self._relevant_conditions(neighbor)
-            argset = self._arguments(neighbor)
-            retset = self._return_value(neighbor)
-            expr_normalizer = ExpressionNormalizer(argset, retset)
+        for i, symbolUser in enumerate(symbolUsers, 1):
+            self.logger.info('Processing %s (%s/%s).', symbolUser, i, len(symbolUsers))            
             
+            symbolName = self.job.getSymbolName()
+            symbolType = self.job.getSymbolType()
+            conditions = ConditionSelector().getRelevantConditions(symbolUser, symbolName, symbolType)
+            normalizedConditions = ConditionNormalizer().normalize(conditions, symbolUser, symbolName, symbolType)
             
-            for condition in conditions:
-                root_expr = condition.children()[0]
-                self.logger.debug('Normalizing condition ( {} ) ({})'.format(root_expr, root_expr.node_id))
-                for expr in expr_normalizer.normalize_expression(root_expr):
-                    expr_saver.demux(neighbor.node_id, expr)
+            # Embed using demux. Replace by embed using embedding module
+            
+            for condition in normalizedConditions:
+                for expr in condition:
+                    expr_saver.demux(symbolUser.node_id, expr)
             if not conditions:
                 # empty feature hack
-                expr_saver.demux(neighbor.node_id, None)
+                expr_saver.demux(symbolUser.node_id, None)
 
         self._create_function_embedding()
-
-    def _relevant_conditions(self, function):
-        symbol_tainter = SymbolTainter()
-        if self.job.getSymbolType() == 'Callee':
-            taintset = set()
-            callees = function.lookup_callees_by_name(self.job.getSymbolName())
-            for callee in callees:
-                for argument in callee.arguments():
-                    taintset = taintset | symbol_tainter.taint_upwards(argument)
-                for return_value in callee.return_value():
-                    taintset = taintset | symbol_tainter.taint_upwards(return_value)
-        else:
-            symbol = function.lookup_symbol_by_name(self.job.getSymbolName())
-            taintset = symbol_tainter.taint(symbol)
-        conditions = map(lambda x : x.traverse_to_using_conditions(), taintset)
-        conditions = set([c for sublist in conditions for c in sublist])
-        return conditions
-
-    """
-    Get arguments of function
-    """
-    def _arguments(self, function):
-        if self.job.getSymbolType() == 'Callee':
-            callees = function.lookup_callees_by_name(self.job.getSymbolName())
-            arguments = map(lambda x : x.arguments(), callees)
-            arguments = [arg for sublist in arguments for arg in sublist]
-            return set(arguments)
-        else:
-            return set()
-
-    def _return_value(self, function):
-        if self.job.getSymbolType() == 'Callee':
-            callees = function.lookup_callees_by_name(self.job.getSymbolName())
-            arguments = map(lambda x : x.return_value(), callees)
-            arguments = [arg for sublist in arguments for arg in sublist]
-            return set(arguments)
-        else:
-            return set()
+    
 
     def _create_function_embedding(self):
         config = 'sally -q -c sally.cfg'

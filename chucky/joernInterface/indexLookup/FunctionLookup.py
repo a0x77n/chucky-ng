@@ -1,5 +1,7 @@
 from joernInterface.JoernInterface import jutils
 from joernInterface.nodes.Function import Function
+from joernInterface.nodes.Symbol import Symbol
+from joernInterface.nodes.Callee import Callee
 
 
 class FunctionLookup:
@@ -43,3 +45,5 @@ class FunctionLookup:
         traversal = 'functions().dedup()'
         result = jutils.lookup(lucene_query, traversal)
         return map(lambda x : Function(x[0], x[1]), result)
+
+    
