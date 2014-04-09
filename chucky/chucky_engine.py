@@ -1,10 +1,6 @@
-
-
 from joernInterface.JoernInterface import jutils
 
-
 import logging
-import shlex
 import subprocess
 
 from nearestNeighbor.NearestNeighborSelector import NearestNeighborSelector
@@ -66,16 +62,6 @@ class ChuckyEngine():
         symbolType = self.job.getSymbolType()
         embedder.embed(symbolUsers, symbolName, symbolType)
 
-    def _create_function_embedding(self):
-        config = 'sally -q -c sally.cfg'
-        config = config + ' --hash_file {}/feats.gz --vect_embed bin'
-        config = config.format(self.workingEnv.exprdir)
-        inputdir = '{}/data'
-        inputdir = inputdir.format(self.workingEnv.exprdir)
-        outfile = '{}/embedding.libsvm'
-        outfile = outfile.format(self.workingEnv.exprdir)
-        command = ' '.join([config, inputdir, outfile])
-        subprocess.check_call(shlex.split(command))
 
     """
     Determine anomaly score.
