@@ -40,7 +40,7 @@ class SallyDataStore:
     for the given function. If necessary, the file
     will be created first.
     """
-    def getDataFileForFunction(self, func):    
+    def createAndGetDataFileForFunction(self, func):    
         
         if not self._isFunctionCached(func):
             self._cacheFunction(func)
@@ -90,7 +90,7 @@ class SallyDataStore:
     table of contents accordingly.
     """
     def transferDataPointFromStore(self, srcStore, func):
-        filename = srcStore.getDataFileForFunction(func)
+        filename = srcStore.createAndGetDataFileForFunction(func)
         number = srcStore.getDataPointNumberForFunction(func)
         self._linkToCachedDataPoint(filename, number, func)
     

@@ -1,5 +1,5 @@
-from demux_tool import DemuxTool
-from conditionNormalization.expression_normalizer import ExpressionNormalizer
+
+
 from joernInterface.JoernInterface import jutils
 
 
@@ -10,9 +10,7 @@ import subprocess
 from nearestNeighbor.NearestNeighborSelector import NearestNeighborSelector
 from ChuckyWorkingEnvironment import ChuckyWorkingEnvironment
 from nearestNeighbor.FunctionSelector import FunctionSelector
-from joernInterface.indexLookup.FunctionLookup import FunctionLookup
-from conditionSelection.ConditionSelector import ConditionSelector
-from conditionNormalization.ConditionNormalizer import ConditionNormalizer
+from conditionAnalyser.ConditionEmbedder import ConditionEmbedder
 
 class ChuckyEngine():
 
@@ -63,27 +61,10 @@ class ChuckyEngine():
     
     def _calculateCheckModels(self, symbolUsers):
         
-        expr_saver = DemuxTool(self.workingEnv.exprdir)
-
-        for i, symbolUser in enumerate(symbolUsers, 1):
-            self.logger.info('Processing %s (%s/%s).', symbolUser, i, len(symbolUsers))            
-            
-            symbolName = self.job.getSymbolName()
-            symbolType = self.job.getSymbolType()
-            conditions = ConditionSelector().getRelevantConditions(symbolUser, symbolName, symbolType)
-            normalizedConditions = ConditionNormalizer().normalize(conditions, symbolUser, symbolName, symbolType)
-            
-            # Embed using demux. Replace by embed using embedding module
-            
-            for condition in normalizedConditions:
-                for expr in condition:
-                    expr_saver.demux(symbolUser.node_id, expr)
-            if not conditions:
-                # empty feature hack
-                expr_saver.demux(symbolUser.node_id, None)
-
-        self._create_function_embedding()
-    
+        embedder = ConditionEmbedder(self.workingEnv.exprdir)
+        symbolName = self.job.getSymbolName()
+        symbolType = self.job.getSymbolType()
+        embedder.embed(symbolUsers, symbolName, symbolType)
 
     def _create_function_embedding(self):
         config = 'sally -q -c sally.cfg'
@@ -95,7 +76,6 @@ class ChuckyEngine():
         outfile = outfile.format(self.workingEnv.exprdir)
         command = ' '.join([config, inputdir, outfile])
         subprocess.check_call(shlex.split(command))
-
 
     """
     Determine anomaly score.

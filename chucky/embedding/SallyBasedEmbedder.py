@@ -4,10 +4,10 @@ import shlex
 
 class SallyBasedEmbedder:
     
-    def embed(self, directory):
+    def embed(self, directory, embType = 'cnt'):
         
         config = 'sally -q -c sally.cfg '
-        config = config + ' --hash_file {}/feats.gz --vect_embed=cnt'
+        config = config + ' --hash_file {}/feats.gz --vect_embed=' + embType
         config = config.format(directory)
         inputdir = '{}/data/'
         inputdir = inputdir.format(directory)

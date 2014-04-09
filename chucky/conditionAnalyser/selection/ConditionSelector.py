@@ -1,5 +1,4 @@
-from conditionSelection.symbol_tainter import SymbolTainter
-from joernInterface.indexLookup.FunctionLookup import FunctionLookup
+from conditionAnalyser.selection.symbol_tainter import SymbolTainter
 
 
 class ConditionSelector:

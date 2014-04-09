@@ -26,8 +26,6 @@ class SallyDataDirectoryCreator:
             if self.cache:
                 self.dstStore.transferDataPointFromStore(self.cache, func)
             else:
-                pass   
+                self.dstStore.createAndGetDataFileForFunction(func)
     
         self.dstStore.close()
-
-        

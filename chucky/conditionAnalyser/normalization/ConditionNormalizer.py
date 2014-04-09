@@ -1,4 +1,4 @@
-from conditionNormalization.expression_normalizer import ExpressionNormalizer
+from conditionAnalyser.normalization.expression_normalizer import ExpressionNormalizer
 
 class ConditionNormalizer:
     

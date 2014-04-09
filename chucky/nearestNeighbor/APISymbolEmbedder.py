@@ -1,7 +1,6 @@
 from embedding.SallyBasedEmbedder import SallyBasedEmbedder
 from embedding.SallyDataDirectoryCreator import SallyDataDirectoryCreator
-
-from embedding.FunctionAPISymbols import FunctionAPISymbols
+from nearestNeighbor.FunctionAPISymbols import FunctionAPISymbols
 
 class APISymbolEmbedder:
     
