@@ -7,9 +7,8 @@ from nearestNeighbor.APISymbolEmbedder import APISymbolEmbedder
 from joernInterface.nodes.Function import Function
 
 """
-Employs an an entity selector and an embedder
-to first embed a set of entities (e.g., functions) and then
-determine the k nearest neighbors to a given entity.
+Employs an embedder to first embed a set of entities (e.g., functions)
+and then determine the k nearest neighbors to a given entity.
 """
 class NearestNeighborSelector:
     
