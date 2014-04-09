@@ -34,6 +34,9 @@ class Node(object):
         else:
             return None
 
+    def getId(self):
+        return self.node_id
+    
     @property
     def node_type(self):
         return self.get_property('type')

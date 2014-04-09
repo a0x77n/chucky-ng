@@ -4,13 +4,12 @@ import shlex
 import os.path
 
 from nearestNeighbor.APISymbolEmbedder import APISymbolEmbedder
-from nearestNeighbor.FunctionSelector import FunctionSelector
 from joernInterface.nodes.Function import Function
 
 """
-Employs a FunctionSelector and an embedder
-to first embed a set of functions and then
-determine the k nearest neighbors to a given function.
+Employs an an entity selector and an embedder
+to first embed a set of entities (e.g., functions) and then
+determine the k nearest neighbors to a given entity.
 """
 class NearestNeighborSelector:
     
@@ -25,30 +24,35 @@ class NearestNeighborSelector:
         self.embeddingDir = embeddingDir
         self.k = 10
         cachedir = os.path.join(basedir, "cache")
+        
         self.embedder = APISymbolEmbedder(cachedir, embeddingDir)
-        self.functionSelector = FunctionSelector()
+        
+    
+    def setEmbedder(self, embedder):
+        self.embedder = embedder
     
     
     def setK(self, k):
         self.k = k
     
     """
-    Get nearest neighbors of function with id 'funcId' that make
-    use of the symbol 'symbol'
+    Get nearest neighbors of entity in set of allEntities
     """
-    def getNearestNeighbors(self, funcId, symbol):
+    def getNearestNeighbors(self, entity, allEntities):
         
-        relatives = self.functionSelector.selectFunctionsUsingSymbol(symbol)
-        if len(relatives) < self.k:
+        if len(allEntities) < self.k:
             return []
 
-        self.embedder.embed(relatives)
-        return self._nearestNeighbors(funcId, self.k)
+        self.embedder.embed(allEntities)
+        return self._nearestNeighbors(entity, self.k)
     
     # FIXME: knn.py offers a python-class so we don't 
     # have to make a call via the shell here
     
-    def _nearestNeighbors(self, nodeId, k):
+    def _nearestNeighbors(self, entity, k):
+        
+        nodeId = entity.getId()
+        
         command = 'knn.py -k {n_neighbors} --dirname {bagdir}'
         command = command.format(n_neighbors=k, bagdir=self.embeddingDir)
         args = shlex.split(command)

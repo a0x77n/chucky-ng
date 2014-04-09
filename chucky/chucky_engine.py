@@ -10,6 +10,7 @@ import subprocess
 
 from nearestNeighbor.NearestNeighborSelector import NearestNeighborSelector
 from ChuckyWorkingEnvironment import ChuckyWorkingEnvironment
+from nearestNeighbor.FunctionSelector import FunctionSelector
 
 class ChuckyEngine():
 
@@ -53,14 +54,18 @@ class ChuckyEngine():
         symbol = self.job.getSymbol()
         self.knn = NearestNeighborSelector(self.workingEnv.basedir, self.workingEnv.bagdir)
         self.knn.setK(self.job.n_neighbors)
-        return self.knn.getNearestNeighbors(self.job.function.node_id, symbol)
+        
+        entitySelector = FunctionSelector()
+        symbolUsers = entitySelector.selectFunctionsUsingSymbol(symbol)
+        
+        return self.knn.getNearestNeighbors(self.job.function, symbolUsers)
     
     def _calculateCheckModels(self, nearestNeighbors):
         
         expr_saver = DemuxTool(self.workingEnv.exprdir)
 
         for i, neighbor in enumerate(nearestNeighbors, 1):
-            self.logger.info('Processing %s (%s/%s).', neighbor, i, len(nearestNeighbors))
+            self.logger.info('Processing %s (%s/%s).', neighbor, i, len(nearestNeighbors))            
             conditions = self._relevant_conditions(neighbor)
             argset = self._arguments(neighbor)
             retset = self._return_value(neighbor)
