@@ -2,6 +2,7 @@ from job.Job import ChuckyJob
 from joernInterface.indexLookup.FunctionLookup import FunctionLookup
 from joernInterface.indexLookup.IdentifierLookup import IdentifierLookup
 from joernInterface.indexLookup.CalleeLookup import CalleeLookup
+import re
 
 
 PARAMETER = 'Parameter'
@@ -17,10 +18,11 @@ class JobGenerator(object):
 
     # Suggested improvement: see ChuckyJob
     
-    def __init__(self, identifier, identifier_type, n_neighbors):
+    def __init__(self, identifier, identifier_type, n_neighbors, limit):
         self.identifier = identifier
         self.identifier_type = identifier_type
         self.n_neighbors = n_neighbors
+        self.limit = limit
 
     """
     Generates a suitable configuration based on the objects
@@ -97,4 +99,8 @@ class JobGenerator(object):
                         CALLEE,
                         self.n_neighbors)
                 configurations.append(configuration)
+
+        if self.limit:
+            configurations = [c for c in configurations if re.search(self.limit, c.function.name)]
+            
         return configurations

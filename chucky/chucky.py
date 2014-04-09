@@ -32,7 +32,8 @@ class Chucky():
         self.job_generator = JobGenerator(
                 identifier = self.args.identifier,
                 identifier_type = self.args.identifier_type,
-                n_neighbors = self.args.n_neighbors)
+                n_neighbors = self.args.n_neighbors,
+                limit = self.args.limit)
         self.engine = ChuckyEngine(self.args.chucky_dir)
 
     def _init_arg_parser(self):
@@ -67,6 +68,14 @@ class Chucky():
                 action = 'store_true',
                 default = False,
                 help = """Enable interactive mode.""")
+        
+        self.arg_parser.add_argument(
+                '-l', '--limit',
+                action = 'store',
+                default = None,
+                type = str,
+                help = """Limit analysis to functions with given name""")
+        
         group = self.arg_parser.add_mutually_exclusive_group()
         group.add_argument(
                 '-d', '--debug',
