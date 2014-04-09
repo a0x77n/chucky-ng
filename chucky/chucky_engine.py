@@ -1,18 +1,12 @@
-from demux_tool import DemuxTool
-from joern_nodes import *
-
-from nearestNeighbor.FunctionSelector import FunctionSelector
-from expression_normalizer import ExpressionNormalizer
-from symbol_tainter import SymbolTainter
-from jutils import jutils
+from joernInterface.JoernInterface import jutils
 
 import logging
-import shlex
 import subprocess
 
 from nearestNeighbor.NearestNeighborSelector import NearestNeighborSelector
 from ChuckyWorkingEnvironment import ChuckyWorkingEnvironment
-from nearestNeighbor.embedding.APISymbolEmbedder import APISymbolEmbedder
+from nearestNeighbor.FunctionSelector import FunctionSelector
+from conditionAnalyser.ConditionEmbedder import ConditionEmbedder
 
 class ChuckyEngine():
 
@@ -25,10 +19,7 @@ class ChuckyEngine():
     def analyze(self, job):
 
         self.job = job
-        
         self.workingEnv = ChuckyWorkingEnvironment(self.basedir, self.logger)
-        self.apiSymbolEmbedder = APISymbolEmbedder(self.workingEnv)
-        self.functionSelector = FunctionSelector()
         
         try:            
             nearestNeighbors = self._getKNearestNeighbors()
@@ -55,88 +46,21 @@ class ChuckyEngine():
     """
     def _getKNearestNeighbors(self):
         
-        # get relatives, i.e., functions using the same symbol. 
         symbol = self.job.getSymbol()
-        relatives = self.functionSelector.selectFunctionsUsingSymbol(symbol)
-              
-        self.logger.debug(
-                '%s functions using the symbol %s.',
-                len(relatives), self.job.getSymbolName())
-
-        if len(relatives) < self.job.n_neighbors:
-            return []
-
-        self.apiSymbolEmbedder.embed(relatives)
-        self.knn = NearestNeighborSelector(self.workingEnv.bagdir)
+        self.knn = NearestNeighborSelector(self.workingEnv.basedir, self.workingEnv.bagdir)
+        self.knn.setK(self.job.n_neighbors)
         
-        return self.knn.getKNearestNeighbors(self.job.function.node_id, self.job.n_neighbors)
+        entitySelector = FunctionSelector()
+        symbolUsers = entitySelector.selectFunctionsUsingSymbol(symbol)
+        
+        return self.knn.getNearestNeighbors(self.job.function, symbolUsers)
     
-    def _calculateCheckModels(self, nearestNeighbors):
+    def _calculateCheckModels(self, symbolUsers):
         
-        expr_saver = DemuxTool(self.workingEnv.exprdir)
-
-        for i, neighbor in enumerate(nearestNeighbors, 1):
-            self.logger.info('Processing %s (%s/%s).', neighbor, i, len(nearestNeighbors))
-            conditions = self._relevant_conditions(neighbor)
-            argset = self._arguments(neighbor)
-            retset = self._return_value(neighbor)
-            expr_normalizer = ExpressionNormalizer(argset, retset)
-            for condition in conditions:
-                root_expr = condition.children()[0]
-                self.logger.debug('Normalizing condition ( {} ) ({})'.format(root_expr, root_expr.node_id))
-                for expr in expr_normalizer.normalize_expression(root_expr):
-                    expr_saver.demux(neighbor.node_id, expr)
-            if not conditions:
-                # empty feature hack
-                expr_saver.demux(neighbor.node_id, None)
-
-        self._create_function_embedding()
-
-    def _relevant_conditions(self, function):
-        symbol_tainter = SymbolTainter()
-        if self.job.getSymbolType() == 'Callee':
-            taintset = set()
-            callees = function.lookup_callees_by_name(self.job.getSymbolName())
-            for callee in callees:
-                for argument in callee.arguments():
-                    taintset = taintset | symbol_tainter.taint_upwards(argument)
-                for return_value in callee.return_value():
-                    taintset = taintset | symbol_tainter.taint_upwards(return_value)
-        else:
-            symbol = function.lookup_symbol_by_name(self.job.getSymbolName())
-            taintset = symbol_tainter.taint(symbol)
-        conditions = map(lambda x : x.traverse_to_using_conditions(), taintset)
-        conditions = set([c for sublist in conditions for c in sublist])
-        return conditions
-
-    def _arguments(self, function):
-        if self.job.getSymbolType() == 'Callee':
-            callees = function.lookup_callees_by_name(self.job.getSymbolName())
-            arguments = map(lambda x : x.arguments(), callees)
-            arguments = [arg for sublist in arguments for arg in sublist]
-            return set(arguments)
-        else:
-            return set()
-
-    def _return_value(self, function):
-        if self.job.getSymbolType() == 'Callee':
-            callees = function.lookup_callees_by_name(self.job.getSymbolName())
-            arguments = map(lambda x : x.return_value(), callees)
-            arguments = [arg for sublist in arguments for arg in sublist]
-            return set(arguments)
-        else:
-            return set()
-
-    def _create_function_embedding(self):
-        config = 'sally -q -c sally.cfg'
-        config = config + ' --hash_file {}/feats.gz --vect_embed bin'
-        config = config.format(self.workingEnv.exprdir)
-        inputdir = '{}/data'
-        inputdir = inputdir.format(self.workingEnv.exprdir)
-        outfile = '{}/embedding.libsvm'
-        outfile = outfile.format(self.workingEnv.exprdir)
-        command = ' '.join([config, inputdir, outfile])
-        subprocess.check_call(shlex.split(command))
+        embedder = ConditionEmbedder(self.workingEnv.exprdir)
+        symbolName = self.job.getSymbolName()
+        symbolType = self.job.getSymbolType()
+        embedder.embed(symbolUsers, symbolName, symbolType)
 
 
     """
@@ -159,12 +83,12 @@ class ChuckyEngine():
                 self.logger.debug('%s %+1.5f %s.', func, float(score), feat)
         return results
 
-    def _outputResult(self, result, getKNearestNeighbors):
+    def _outputResult(self, result, _nearestNeighbors):
         
         sorted_result = sorted(result.items(), key = lambda x : max(x[1])[0], reverse = True)
         for i, (function, data) in enumerate(sorted_result, 1):
             score, feat = max(data)
-            for neighbor in getKNearestNeighbors:
+            for neighbor in _nearestNeighbors:
                 if neighbor.node_id == function:
                     print '{:>3} {:< 6.5f}\t{:30}\t{:10}\t{}'.format(i, score, neighbor.name, function, feat)
     

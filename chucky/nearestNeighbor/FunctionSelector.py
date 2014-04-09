@@ -1,5 +1,5 @@
 
-from joern_nodes import Function
+from joernInterface.indexLookup.FunctionLookup import FunctionLookup
 
 """
 Selection of functions based on different criteria,
@@ -18,15 +18,15 @@ class FunctionSelector:
     """
     def selectFunctionsUsingSymbol(self, symbol):
         if symbol.target_type == 'Parameter':
-            functions = Function.lookup_functions_by_parameter(
+            functions = FunctionLookup.lookup_functions_by_parameter(
                     symbol.target_name,
                     symbol.target_decl_type)
         elif symbol.target_type == 'Variable':
-            functions = Function.lookup_functions_by_variable(
+            functions = FunctionLookup.lookup_functions_by_variable(
                     symbol.target_name,
                     symbol.target_decl_type)
         elif symbol.target_type == 'Callee':
-            functions = Function.lookup_functions_by_callee(
+            functions = FunctionLookup.lookup_functions_by_callee(
                     symbol.target_name)
         
         return functions

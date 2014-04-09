@@ -1,7 +1,9 @@
-from joern_nodes import *
 from job.Job import ChuckyJob
+from joernInterface.indexLookup.FunctionLookup import FunctionLookup
+from joernInterface.indexLookup.IdentifierLookup import IdentifierLookup
+from joernInterface.indexLookup.CalleeLookup import CalleeLookup
+import re
 
-import logging
 
 PARAMETER = 'Parameter'
 VARIABLE = 'Variable'
@@ -16,10 +18,11 @@ class JobGenerator(object):
 
     # Suggested improvement: see ChuckyJob
     
-    def __init__(self, identifier, identifier_type, n_neighbors):
+    def __init__(self, identifier, identifier_type, n_neighbors, limit):
         self.identifier = identifier
         self.identifier_type = identifier_type
         self.n_neighbors = n_neighbors
+        self.limit = limit
 
     """
     Generates a suitable configuration based on the objects
@@ -31,7 +34,7 @@ class JobGenerator(object):
     def generate(self):
         configurations = []
         if self.identifier_type == 'function':
-            functions = Function.lookup_functions_by_name(self.identifier)
+            functions = FunctionLookup.lookup_functions_by_name(self.identifier)
             for function in functions:
                 parameters = function.parameters()
                 parameters = map(lambda x : (x.code, x.declaration_type()), parameters)
@@ -67,7 +70,7 @@ class JobGenerator(object):
                             self.n_neighbors)
                     configurations.append(configuration)
         elif self.identifier_type == 'parameter':
-            parameters = Identifier.lookup_parameter(self.identifier)
+            parameters = IdentifierLookup.lookup_parameter(self.identifier)
             for parameter in parameters:
                 configuration = ChuckyJob(
                         parameter.function(),
@@ -77,7 +80,11 @@ class JobGenerator(object):
                         self.n_neighbors)
                 configurations.append(configuration)
         elif self.identifier_type == 'variable':
+<<<<<<< HEAD
             variables = Identifier.lookup_variable(self.identifier)
+=======
+            variables = IdentifierLookup.lookup_variable(self.identifier)
+>>>>>>> 1bd535c5b06e748b78b869c411dc7e9d378f7650
             for variable in variables:
                 configuration = ChuckyJob(
                         variable.function(),
@@ -87,7 +94,7 @@ class JobGenerator(object):
                         self.n_neighbors)
                 configurations.append(configuration)
         elif self.identifier_type == 'callee':
-            callees = Callee.lookup_callees_by_name(self.identifier)
+            callees = CalleeLookup.calleesByName(self.identifier)
             for callee in callees:
                 configuration = ChuckyJob(
                         callee.function(),
@@ -96,4 +103,8 @@ class JobGenerator(object):
                         CALLEE,
                         self.n_neighbors)
                 configurations.append(configuration)
+
+        if self.limit:
+            configurations = [c for c in configurations if re.search(self.limit, c.function.name)]
+            
         return configurations

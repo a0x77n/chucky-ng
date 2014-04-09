@@ -1,23 +1,59 @@
 
 import subprocess
 import shlex
-from joern_nodes import Function
+import os.path
 
+from nearestNeighbor.APISymbolEmbedder import APISymbolEmbedder
+from joernInterface.nodes.Function import Function
+
+"""
+Employs an embedder to first embed a set of entities (e.g., functions)
+and then determine the k nearest neighbors to a given entity.
+"""
 class NearestNeighborSelector:
     
-    def __init__(self, embeddingDir):
-        self.bagdir = embeddingDir
+    """
+    @param basedir: directory for temporary files. We assume
+                    that the cache lives at $basedir/cache
+    
+    @param embeddingDir: the directory to store the embedding.    
+    """
+    
+    def __init__(self, basedir, embeddingDir):
+        self.embeddingDir = embeddingDir
+        self.k = 10
+        cachedir = os.path.join(basedir, "cache")
+        
+        self.embedder = APISymbolEmbedder(cachedir, embeddingDir)
+        
+    
+    def setEmbedder(self, embedder):
+        self.embedder = embedder
+    
+    
+    def setK(self, k):
+        self.k = k
+    
+    """
+    Get nearest neighbors of entity in set of allEntities
+    """
+    def getNearestNeighbors(self, entity, allEntities):
+        
+        if len(allEntities) < self.k:
+            return []
+
+        self.embedder.embed(allEntities)
+        return self._nearestNeighbors(entity, self.k)
     
     # FIXME: knn.py offers a python-class so we don't 
     # have to make a call via the shell here
     
-    """
-    Determine k nearest neighbors for self.job.function.node_id
-    by calling knn.py
-    """
-    def getKNearestNeighbors(self, nodeId, k):
+    def _nearestNeighbors(self, entity, k):
+        
+        nodeId = entity.getId()
+        
         command = 'knn.py -k {n_neighbors} --dirname {bagdir}'
-        command = command.format(n_neighbors=k, bagdir=self.bagdir)
+        command = command.format(n_neighbors=k, bagdir=self.embeddingDir)
         args = shlex.split(command)
         knn = subprocess.Popen(
                 args,
