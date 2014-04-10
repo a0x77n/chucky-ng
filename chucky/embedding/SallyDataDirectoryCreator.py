@@ -20,7 +20,6 @@ class SallyDataDirectoryCreator:
     be embedded using a SallyBasedEmbedder.
     """
     def create(self, functions):
-
         for func in functions:
             # self.logger.info('Processing %s (%s/%s).', func, i, len(functions))
             if self.cache:
@@ -28,4 +27,6 @@ class SallyDataDirectoryCreator:
             else:
                 self.dstStore.createAndGetDataFileForFunction(func)
     
+	if self.cache:
+		self.cache.close()
         self.dstStore.close()
