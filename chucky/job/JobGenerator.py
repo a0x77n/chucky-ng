@@ -80,11 +80,7 @@ class JobGenerator(object):
                         self.n_neighbors)
                 configurations.append(configuration)
         elif self.identifier_type == 'variable':
-<<<<<<< HEAD
-            variables = Identifier.lookup_variable(self.identifier)
-=======
             variables = IdentifierLookup.lookup_variable(self.identifier)
->>>>>>> 1bd535c5b06e748b78b869c411dc7e9d378f7650
             for variable in variables:
                 configuration = ChuckyJob(
                         variable.function(),
