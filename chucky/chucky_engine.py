@@ -31,7 +31,7 @@ class ChuckyEngine():
 
             self._calculateCheckModels(nearestNeighbors)
             result = self._anomaly_rating()
-            self._outputResult(result, nearestNeighbors)
+            self._outputResult(result)
 
         except subprocess.CalledProcessError as e:
             self.logger.error(e)
@@ -49,10 +49,9 @@ class ChuckyEngine():
         symbol = self.job.getSymbol()
         self.knn = NearestNeighborSelector(self.workingEnv.basedir, self.workingEnv.bagdir)
         self.knn.setK(self.job.n_neighbors)
-        
+    
         entitySelector = FunctionSelector()
         symbolUsers = entitySelector.selectFunctionsUsingSymbol(symbol)
-        
         return self.knn.getNearestNeighbors(self.job.function, symbolUsers)
     
     def _calculateCheckModels(self, symbolUsers):
@@ -68,27 +67,19 @@ class ChuckyEngine():
     """
     def _anomaly_rating(self):
         command = "echo %d |" % (self.job.function.node_id)
-        command += 'python ../python/anomaly_score.py -e -d {dir}'
+        command += 'python ../python/anomaly_score.py -d {dir}'
         command = command.format(dir = self.workingEnv.exprdir)
         output = subprocess.check_output(command, shell=True)
 
-        results = {}
+        results = []
         for line in output.strip().split('\n'):
-            if line.startswith('#'):
-                func = line[3:]
-                results[func] = []
-            else:
-                score, feat = line.split(' ', 1)
-                results[func].append((float(score), feat))
-                self.logger.debug('%s %+1.5f %s.', func, float(score), feat)
+            score, feat = line.split(' ', 1)
+            results.append((float(score), feat))
+            self.logger.debug('%+1.5f %s.', float(score), feat)
         return results
 
-    def _outputResult(self, result, _nearestNeighbors):
+    def _outputResult(self, result):
         
-        sorted_result = sorted(result.items(), key = lambda x : max(x[1])[0], reverse = True)
-        for i, (function, data) in enumerate(sorted_result, 1):
-            score, feat = max(data)
-            for neighbor in _nearestNeighbors:
-                if neighbor.node_id == function:
-                    print '{:>3} {:< 6.5f}\t{:30}\t{:10}\t{}'.format(i, score, neighbor.name, function, feat)
+        score, feat = max(result)
+        print '{:< 6.5f}\t{:40}\t{:10}\t{}'.format(score, self.job.function, self.job.function.node_id, feat)
     
