@@ -1,17 +1,19 @@
 from conditionAnalyser.normalization.expression_normalizer import ExpressionNormalizer
+from joernInterface.JoernInterface import jutils
 
 class ConditionNormalizer:
     
     def normalize(self, conditions, function, symbolName, symbolType):
         argset = self._arguments(function, symbolName, symbolType)
         retset = self._return_values(function, symbolName, symbolType)
-        expr_normalizer = ExpressionNormalizer(argset, retset)
+        argList = ', '.join(map(lambda x : '\"{}\"'.format(x), argset))
+        retList = ', '.join(map(lambda x : '\"{}\"'.format(x), retset))
         
         retval = []
         for condition in conditions:
-            root_expr = condition.children()[0]
-            # self.logger.debug('Normalizing condition ( {} ) ({})'.format(root_expr, root_expr.node_id))
-            x = [expr for expr in expr_normalizer.normalize_expression(root_expr)]
+            traversal = 'normalize([{}], [{}])'.format(argList, retList)
+            command = '.'.join([condition.node_selection, traversal])
+            x = jutils.joern.runGremlinQuery(command)
             retval.append(x)
         return retval
         
