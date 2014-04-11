@@ -32,6 +32,9 @@ class ChuckyJob(object):
     def getSymbolType(self):
         return self.symbol.target_type
      
+    def __eq__(self, other):
+        return self.symbol == other.symbol
+     
     def __hash__(self):
         return self.symbol.__hash__()
     
