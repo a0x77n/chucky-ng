@@ -31,7 +31,10 @@ class ChuckyJob(object):
     
     def getSymbolType(self):
         return self.symbol.target_type
-     
+    
+    def __hash__(self):
+        return self.symbol.hash()
+    
     def __str__(self):
         if self.symbol.target_decl_type:
             s = '{} ({}) - {} {} [{}]'

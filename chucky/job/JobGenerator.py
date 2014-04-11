@@ -101,6 +101,7 @@ class JobGenerator(object):
                 configurations.append(configuration)
 
         if self.limit:
-            configurations = [c for c in configurations if re.search(self.limit, c.function.name)]
+            configurations = set([c for c in configurations if re.search(self.limit, c.function.name)])
+            configurations = list(configurations)
             
         return configurations
