@@ -12,7 +12,7 @@ class ConditionSelector:
                 for argument in callee.arguments():
                     taintset = taintset | symbol_tainter.taint_upwards(argument)
                 for return_value in callee.return_value():
-                    taintset = taintset | symbol_tainter.taint_upwards(return_value)
+                    taintset = taintset | symbol_tainter.taint_downwards(return_value)
         else:
             symbol = function.symbolsByName(symbolName)
             taintset = symbol_tainter.taint(symbol)
