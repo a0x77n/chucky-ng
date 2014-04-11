@@ -100,6 +100,8 @@ class JobGenerator(object):
                         self.n_neighbors)
                 configurations.append(configuration)
 
+        configurations = list(set(configurations))
+        print len(configurations)
         if self.limit:
             configurations = set([c for c in configurations if re.search(self.limit, c.function.name)])
             configurations = list(configurations)
