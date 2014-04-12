@@ -34,17 +34,17 @@ class FunctionConditions:
 
     def conditions(self):
         lucene_query = 'conditions = []; argList = []; retList = []; queryNodeIndex(\'type:"{}" AND functionId:"{}" AND code:"{}"\')'
-        lucene_query = lucene_query.format(self.symbolType, self.obj.node_id, self.symbolName)
-        traversal = ''
         if self.symbolType == 'Callee':
-            traversal += (
+            lucene_query = lucene_query.format('Callee', self.obj.node_id, self.symbolName)
+            traversal = (
                     'copySplit('
                     '_().calleeToArguments().store(argList, {it.code}).taintUpwards(),'
                     '_().calleeToReturnValue().store(retList, {it.code}).taintDownwards())'
                     '.fairMerge().dedup()'
             )
         else:
-            traversal += (
+            lucene_query = lucene_query.format('Symbol', self.obj.node_id, self.symbolName)
+            traversal = (
                     'copySplit('
                     '_().taintUpwards(),'
                     '_().taintDownwards())'
