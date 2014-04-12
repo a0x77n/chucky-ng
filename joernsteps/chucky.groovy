@@ -61,20 +61,28 @@ Gremlin.defineStep('calleeToReturnValue', [Vertex, Pipe], {
 
 Gremlin.defineStep('taintUpwards', [Vertex, Pipe], {
 	_() // Symbol node
-	.in('DEF')
-	.filter{it.isCFGNode == 'True'}
-	.out('USE')
-	.simplePath()
-	.loop(4){it.loops < 5}{true}
+        .copySplit(
+            _(),
+	    _().in('DEF')
+	    .filter{it.isCFGNode == 'True'}
+	    .out('USE')
+	    .filter{it.isCFGNode == 'True'}
+	    .simplePath()
+	    .loop(4){it.loops < 5}{true}
+        ).fairMerge()
 	.dedup()
 });
 
 Gremlin.defineStep('taintDownwards', [Vertex, Pipe], {
 	_() // Symbol node
-	.in('USE')
-	.filter{it.isCFGNode == 'True'}
-	.out('DEF')
-	.simplePath()
-	.loop(4){it.loops < 5}{true}
+        .copySplit(
+		_(),
+		_().in('USE')
+		.filter{it.isCFGNode == 'True'}
+		.out('DEF')
+		.filter{it.isCFGNode == 'True'}
+		.simplePath()
+		.loop(4){it.loops < 5}{true}
+	).fairMerge()
 	.dedup()
 });
