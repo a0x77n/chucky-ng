@@ -66,7 +66,6 @@ Gremlin.defineStep('taintUpwards', [Vertex, Pipe], {
 	    _().in('DEF')
 	    .filter{it.isCFGNode == 'True'}
 	    .out('USE')
-	    .filter{it.isCFGNode == 'True'}
 	    .simplePath()
 	    .loop(4){it.loops < 5}{true}
         ).fairMerge()
@@ -80,7 +79,6 @@ Gremlin.defineStep('taintDownwards', [Vertex, Pipe], {
 		_().in('USE')
 		.filter{it.isCFGNode == 'True'}
 		.out('DEF')
-		.filter{it.isCFGNode == 'True'}
 		.simplePath()
 		.loop(4){it.loops < 5}{true}
 	).fairMerge()
