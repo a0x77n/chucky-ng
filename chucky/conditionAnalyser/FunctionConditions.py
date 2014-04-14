@@ -20,5 +20,5 @@ class FunctionConditions:
     def getFeatures(self):
         conditions = ConditionSelector().getRelevantConditions(self.obj, self.symbolName, self.symbolType)
         normalizedConditions = ConditionNormalizer().normalize(conditions, self.obj, self.symbolName, self.symbolType)
-        return itertools.chain(*normalizedConditions)
+        return set(itertools.chain(*normalizedConditions))
         
