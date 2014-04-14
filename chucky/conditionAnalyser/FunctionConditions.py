@@ -33,26 +33,26 @@ class FunctionConditions:
         return normalizedConditions
 
     def conditions(self):
-        lucene_query = 'conditions = []; argList = []; retList = []; queryNodeIndex(\'type:"{}" AND functionId:"{}" AND code:"{}"\')'
+        declarations = 'argList = []; retList = []' 
+        node_selection =  'queryNodeIndex(\'type:"{}" AND functionId:"{}" AND code:"{}"\')'
         if self.symbolType == 'Callee':
-            lucene_query = lucene_query.format('Callee', self.obj.node_id, self.symbolName)
-            traversal = (
+            node_selection = node_selection.format('Callee', self.obj.node_id, self.symbolName)
+            taint_traversal = (
                     'copySplit('
-                    '_().calleeToArguments().store(argList, {it.code}).taintUpwards(),'
-                    '_().calleeToReturnValue().store(retList, {it.code}).taintDownwards())'
+                    '_().calleeToArguments().aggregate(argList, {it.code}).taintUpwards(),'
+                    '_().calleeToReturnValue().aggregate(retList, {it.code}).taintDownwards())'
                     '.fairMerge().dedup()'
             )
         else:
-            lucene_query = lucene_query.format('Symbol', self.obj.node_id, self.symbolName)
-            traversal = (
+            node_selection = node_selection.format('Symbol', self.obj.node_id, self.symbolName)
+            taint_traversal = (
                     'copySplit('
                     '_().taintUpwards(),'
                     '_().taintDownwards())'
                     '.fairMerge().dedup()'
             )
-        traversal += '.symbolToUsingConditions().dedup()'
-        traversal += '.store(conditions).iterate()'
-        command = '.'.join([lucene_query, traversal])
-        command += '; g.transform{ conditions }.scatter().normalize(argList, retList)'
-        x = jutils.joern.runGremlinQuery(command)
+        condition_traversal = 'symbolToUsingConditions().dedup()'
+        normalization = 'normalize(argList, retList)'
+        command = '.'.join([node_selection, taint_traversal, condition_traversal, normalization])
+        x = jutils.runGremlinCommands([declarations, command])
         return x
