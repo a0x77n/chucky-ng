@@ -1,9 +1,11 @@
-class ConditionalExpressionHandler {
+class ConditionalExpressionHandler extends DefaultHandler {
 
-    def prune = false;
+	ConditionalExpressionHandler() {
+		super(false, true);
+	}
 
-    def execute(node, children) {
+	String apply(node, children) {
 		return "${children[0]} ? ${children[1]} : ${children[2]}"
-    };
+	}
     
 }

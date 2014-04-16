@@ -1,14 +1,15 @@
-class ArithmeticOperationHandler {
+class ArithmeticOperationHandler extends DefaultHandler {
 
-    def NUM = "\$NUM";
-    
-    def prune = false;
+	ArithmeticOperationHandler() {
+		super(false, true);
+	}
 
-    def execute(node, children) {
-        if (children[0] == NUM && children[1] == NUM) {
-            return NUM;
-        } else {
-            return "( " + children[0] + " ${node.operator} " + children[1] + " )";
-        }
-    };
+	String apply(node, children) {
+		if (children[0] == NUM && children[1] == NUM) {
+			return NUM;
+		} else {
+			return "( ${children[0]} ${node.operator} ${children[1]} )";
+		}
+	}
+
 }

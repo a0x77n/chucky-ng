@@ -1,12 +1,13 @@
 Gremlin.defineStep('normalize', [Vertex, Pipe], { args, ret ->
+
     def normalizer = new ASTNormalizer();
     def handler;
     
-    handler = new DefaultHandler();
+    handler = new DefaultHandler(true, true);
     normalizer.addHandler('IncDec', handler);
     normalizer.addHandler('CastTarget', handler);
     
-    handler = new IdentifierNodeHandler(args, ret);
+    handler = new IdentifierHandler(args, ret);
     normalizer.addHandler('Identifier', handler);
     normalizer.addHandler('PtrMemberAccess', handler);
     normalizer.addHandler('MemberAccess', handler);

@@ -1,9 +1,28 @@
-class DefaultHandler {
+class DefaultHandler implements Handler {
 
-    def prune = true;
+	static final String CMP = "\$CMP";
+	static final String NUM = "\$NUM";
+	static final String ARG = "\$ARG";
+	static final String RET = "\$RET";
 
-    def execute(node, children) {
+	boolean prune;
+	boolean store;
+
+	DefaultHandler(boolean prune, boolean store) {
+		this.prune = prune;
+		this.store = store;
+	}
+
+	String apply(node, children) {
 		return node.code;
-    };
-    
+	};
+
+	boolean prune() {
+		return prune;
+	}
+
+	boolean store() {
+		return store;
+	}    
+
 }

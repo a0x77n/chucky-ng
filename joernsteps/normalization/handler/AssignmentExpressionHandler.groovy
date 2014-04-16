@@ -1,9 +1,11 @@
-class AssignmentExpressionHandler {
+class AssignmentExpressionHandler extends DefaultHandler {
 
-    def prune = false;
+	AssignmentExpressionHandler() {
+		super(false, true);
+	}
 
-    def execute(node, children) {
+	String apply(node, children) {
 		return "${children[0]} = ${children[1]}";
-    };
+	}
     
 }
