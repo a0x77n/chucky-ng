@@ -25,14 +25,13 @@ class FunctionConditions:
         #for i, feat in enumerate(sorted(normalizedConditions)):
         #    print i, '\t', feat
 
-        normalizedConditions = self.conditions()
-        normalizedConditions = set(normalizedConditions)
-        #for i, feat in enumerate(sorted(normalizedConditions)):
-        #    print i, '\t', feat
+        normalizedConditions = self.normalize_conditions()
+        for i, feat in enumerate(sorted(normalizedConditions)):
+            print i, '\t', feat
         #return itertools.chain(*normalizedConditions)
         return normalizedConditions
 
-    def conditions(self):
+    def normalize_conditions(self):
         declarations = 'argList = []; retList = []' 
         node_selection =  'queryNodeIndex(\'type:"{}" AND functionId:"{}" AND code:"{}"\')'
         if self.symbolType == 'Callee':
@@ -55,4 +54,4 @@ class FunctionConditions:
         normalization = 'normalize(argList, retList)'
         command = '.'.join([node_selection, taint_traversal, condition_traversal, normalization])
         x = jutils.runGremlinCommands([declarations, command])
-        return x
+        return set(x)
