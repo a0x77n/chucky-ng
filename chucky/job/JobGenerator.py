@@ -18,11 +18,11 @@ class JobGenerator(object):
 
     # Suggested improvement: see ChuckyJob
     
-    def __init__(self, identifier, identifier_type, n_neighbors, limit):
+    def __init__(self, identifier, identifier_type, n_neighbors):
         self.identifier = identifier
         self.identifier_type = identifier_type
         self.n_neighbors = n_neighbors
-        self.limit = limit
+        self.limit = None
 
     """
     Generates a suitable configuration based on the objects
@@ -104,7 +104,10 @@ class JobGenerator(object):
         configurations = list(set(configurations))
         
         if self.limit:
-            configurations = set([c for c in configurations if re.search(self.limit, c.function.name)])
+            if self.limit.isdigit():
+                configurations = set([c for c in configurations if int(self.limit) == c.function.node_id])
+            else:
+                configurations = set([c for c in configurations if re.search(self.limit, c.function.name)])
             configurations = list(configurations)
             
         return configurations

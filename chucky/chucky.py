@@ -32,8 +32,8 @@ class Chucky():
         self.job_generator = JobGenerator(
                 identifier = self.args.identifier,
                 identifier_type = self.args.identifier_type,
-                n_neighbors = self.args.n_neighbors,
-                limit = self.args.limit)
+                n_neighbors = self.args.n_neighbors)
+        self.job_generator.limit = self.args.limit
         self.engine = ChuckyEngine(self.args.chucky_dir)
 
     def _init_arg_parser(self):
@@ -46,7 +46,7 @@ class Chucky():
                 '-i', '--identifier-type',
                 action = 'store',
                 default = 'function',
-                choices = ['function','callee', 'parameter', 'variable'],
+                choices = ['function', 'callee', 'parameter', 'variable'],
                 help = """The type of identifier the positional argument
                 `identifier` refers to.""")
         self.arg_parser.add_argument(
@@ -68,7 +68,6 @@ class Chucky():
                 action = 'store_true',
                 default = False,
                 help = """Enable interactive mode.""")
-        
         self.arg_parser.add_argument(
                 '-l', '--limit',
                 action = 'store',
