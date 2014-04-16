@@ -1,9 +1,11 @@
-class PassThroughHandler {
+class PassThroughHandler extends DefaultHandler {
 
-    def prune = false;
+	PassThroughHandler() {
+		super(false, false);
+	}
 
-    def execute(node, children) {
+	String apply(node, children) {
 		return children[0];
-    };
+	};
     
 }

@@ -1,9 +1,11 @@
-class ArrayIndexingHandler {
+class ArrayIndexingHandler extends DefaultHandler {
 
-    def prune = false;
+	ArrayIndexingHandler() {
+		super(false, true);
+	}
 
-    def execute(node, children) {
-		return "${children[0]} [ ${children[1]} ]";
-    };
+	String apply(node, children) {
+		return "${children[0]} [${children[1]}]";
+	}
     
 }

@@ -1,8 +1,11 @@
-class RelationalOperationHandler {
+class RelationalOperationHandler extends DefaultHandler {
 
-    def prune = false;
+	RelationalOperationHandler() {
+		super(false, true);
+	}
 
-    def execute(node, children) {
-        return "( " + children[0] + " \$CMP " + children[1] + " )";
-    };
+	String apply(node, children) {
+		return "( ${children[0]} ${CMP} ${children[1]} )";
+	}
+
 }

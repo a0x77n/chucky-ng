@@ -1,8 +1,11 @@
-class BinaryOperationHandler {
+class BinaryOperationHandler extends DefaultHandler {
 
-    def prune = false;
+	BinaryOperationHandler() {
+		super(false, true);
+	}
 
-    def execute(node, children) {
-        return "( " + children[0] + " ${node.operator} " + children[1] + " )";
-    };
+	String apply(node, children) {
+		return "( ${children[0]} ${node.operator} ${children[1]} )";
+	}
+
 }

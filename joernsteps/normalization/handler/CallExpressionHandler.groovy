@@ -1,9 +1,11 @@
-class CallExpressionHandler {
+class CallExpressionHandler extends DefaultHandler {
 
-    def prune = false;
+	CallExpressionHandler() {
+		super(false, true);
+	}
 
-    def execute(node, children) {
+	def execute(node, children) {
 		return "${children[0]} ( ${children[1]} )"
-    };
+	};
     
 }

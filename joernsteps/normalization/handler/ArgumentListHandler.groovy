@@ -1,9 +1,11 @@
-class ArgumentListHandler {
+class ArgumentListHandler extends DefaultHandler {
+	
+	ArgumentListHandler() {
+		super(true, false)
+	}
 
-    def prune = true;
-
-    def execute(node, children) {
+	String apply(node, children) {
 		return children.join(", ");
-    };
+	};
     
 }
