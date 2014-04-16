@@ -1,5 +1,3 @@
-from conditionAnalyser.selection.ConditionSelector import ConditionSelector
-from conditionAnalyser.normalization.ConditionNormalizer import ConditionNormalizer
 from joernInterface.JoernInterface import jutils
 
 import itertools
