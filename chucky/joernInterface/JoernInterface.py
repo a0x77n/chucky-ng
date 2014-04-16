@@ -28,3 +28,7 @@ class jutils:
         
         return jutils.joern.runGremlinQuery(command)
 
+    @staticmethod
+    def runGremlinCommands(commands):
+        command = '; '.join(commands)
+        return jutils.joern.runGremlinQuery(command)
