@@ -19,16 +19,9 @@ class FunctionConditions:
         return int(self.obj.node_id)
     
     def getFeatures(self):
-        #conditions = ConditionSelector().getRelevantConditions(self.obj, self.symbolName, self.symbolType)
-        #normalizedConditions = ConditionNormalizer().normalize(conditions, self.obj, self.symbolName, self.symbolType)
-        #normalizedConditions = set(itertools.chain(*normalizedConditions))
+        normalizedConditions = self.normalize_conditions()
         #for i, feat in enumerate(sorted(normalizedConditions)):
         #    print i, '\t', feat
-
-        normalizedConditions = self.normalize_conditions()
-        for i, feat in enumerate(sorted(normalizedConditions)):
-            print i, '\t', feat
-        #return itertools.chain(*normalizedConditions)
         return normalizedConditions
 
     def normalize_conditions(self):
