@@ -1,4 +1,6 @@
 from joernInterface.JoernInterface import jutils
+import os
+import os.path
 
 import logging
 import subprocess
@@ -66,10 +68,13 @@ class ChuckyEngine():
     Determine anomaly score.
     """
     def _anomaly_rating(self):
-        command = "echo %d |" % (self.job.function.node_id)
-        command += 'python ../python/anomaly_score.py -d {dir}'
-        command = command.format(dir = self.workingEnv.exprdir)
-        output = subprocess.check_output(command, shell=True)
+        dirname = os.path.dirname(os.path.dirname(__file__))
+        command = "echo %d | " % (self.job.function.node_id)
+        command += 'python {dirname}/python/anomaly_score.py -d {dir}'
+        command = command.format(
+                dirname = dirname,
+                dir = self.workingEnv.exprdir)
+        output = subprocess.check_output(command, shell = True)
 
         results = []
         for line in output.strip().split('\n'):
