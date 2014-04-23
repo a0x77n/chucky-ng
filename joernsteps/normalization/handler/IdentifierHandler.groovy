@@ -9,7 +9,7 @@ class IdentifierHandler extends DefaultHandler {
 		ret = return_value;
 	}
     
-	def execute(node, children) {
+	String apply(node, children) {
 		if (ret.contains(node.code)) {
 			return RET;
 		} else if (args.contains(node.code)) {

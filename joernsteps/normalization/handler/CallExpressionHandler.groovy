@@ -4,7 +4,7 @@ class CallExpressionHandler extends DefaultHandler {
 		super(false, true);
 	}
 
-	def execute(node, children) {
+	String apply(node, children) {
 		return "${children[0]} ( ${children[1]} )"
 	};
     
