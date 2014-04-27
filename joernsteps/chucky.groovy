@@ -41,7 +41,7 @@ Gremlin.defineStep('symbolToUsingConditions', [Vertex, Pipe], {
 Gremlin.defineStep('functionToAPISymbolNodes', [Vertex, Pipe], {
 	_() // Function node
 	.functionToASTNodes()
-	.filter{it.type == 'IdentifierDeclType' || it.type == 'ParameterType' || it.type == 'Callee'}
+	.filter{it.type == 'IdentifierDeclType' || it.type == 'ParameterType' || it.type == 'Callee' || it.type == 'Sizeof'}
 });
 
 Gremlin.defineStep('calleeToArguments', [Vertex, Pipe], {
