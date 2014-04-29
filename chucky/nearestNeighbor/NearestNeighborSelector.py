@@ -3,7 +3,6 @@ import subprocess
 import shlex
 import os.path
 
-from nearestNeighbor.APISymbolEmbedder import APISymbolEmbedder
 from joernInterface.nodes.Function import Function
 
 """
@@ -22,14 +21,7 @@ class NearestNeighborSelector:
     def __init__(self, basedir, embeddingDir):
         self.embeddingDir = embeddingDir
         self.k = 10
-        cachedir = os.path.join(basedir, "cache")
-        
-        self.embedder = APISymbolEmbedder(cachedir, embeddingDir)
-        
-    
-    def setEmbedder(self, embedder):
-        self.embedder = embedder
-    
+        self.cachedir = os.path.join(basedir, "cache")
     
     def setK(self, k):
         self.k = k
@@ -42,18 +34,19 @@ class NearestNeighborSelector:
         if len(allEntities) < self.k:
             return []
 
-        self.embedder.embed(allEntities)
-        return self._nearestNeighbors(entity, self.k)
+        return self._nearestNeighbors(entity, self.k, allEntities)
     
     # FIXME: knn.py offers a python-class so we don't 
     # have to make a call via the shell here
     
-    def _nearestNeighbors(self, entity, k):
+    def _nearestNeighbors(self, entity, k, allEntities):
+        
+        limitFilename = self._createLimitFile(allEntities)
         
         nodeId = entity.getId()
         
-        command = 'knn.py -k {n_neighbors} --dirname {bagdir}'
-        command = command.format(n_neighbors=k, bagdir=self.embeddingDir)
+        command = 'knn.py -k {n_neighbors} --dirname {bagdir} -l {limit}'
+        command = command.format(n_neighbors=k, bagdir=self.cachedir, limit=limitFilename)
         args = shlex.split(command)
         knn = subprocess.Popen(
                 args,
@@ -68,3 +61,12 @@ class NearestNeighborSelector:
         for neighbor in stdout.strip().split('\n'):
             neighbors.append(Function(neighbor))
         return neighbors
+    
+    def _createLimitFile(self, entities):
+        filename = os.path.join(self.cachedir, 'limitfile')
+        f = file(filename, 'w')
+        f.writelines([str(e.getId()) + '\n' for e in entities] )
+        f.close()
+        return filename
+    
+            

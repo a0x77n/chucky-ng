@@ -10,6 +10,7 @@ class ChuckyWorkingEnvironment():
         self.basedir = basedir
         self.logger = logger
         
+        self.cachedir = os.path.join(basedir, 'cache')
         self.workingdir = tempfile.mkdtemp(dir=self.basedir)
         self.bagdir = os.path.join(self.workingdir, 'bag')
         self.exprdir = os.path.join(self.workingdir, 'exp')

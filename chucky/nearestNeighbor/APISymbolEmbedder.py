@@ -14,7 +14,7 @@ class APISymbolEmbedder:
         # self.embedder = SallyBasedEmbedder()
     
     def embed(self, functions):
-         
+                 
         functions = [FunctionAPISymbols(x) for x in functions]
         self.dataDirCreator.create(functions)
         self.embedder.embed(self.outputdir)

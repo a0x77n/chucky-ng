@@ -30,3 +30,7 @@ class FunctionSelector:
                     symbol.target_name)
         
         return functions
+
+    def selectAllFunctions(self):
+        functions = FunctionLookup.lookup_all_functions()
+        return functions

@@ -1,6 +1,5 @@
 from joernInterface.JoernInterface import jutils
 import os
-import os.path
 
 import logging
 import subprocess
@@ -9,6 +8,7 @@ from nearestNeighbor.NearestNeighborSelector import NearestNeighborSelector
 from ChuckyWorkingEnvironment import ChuckyWorkingEnvironment
 from nearestNeighbor.FunctionSelector import FunctionSelector
 from conditionAnalyser.ConditionEmbedder import ConditionEmbedder
+from GlobalAPIEmbedding import GlobalAPIEmbedding
 
 class ChuckyEngine():
 
@@ -22,6 +22,7 @@ class ChuckyEngine():
 
         self.job = job
         self.workingEnv = ChuckyWorkingEnvironment(self.basedir, self.logger)
+        self.globalAPIEmbedding = GlobalAPIEmbedding(self.workingEnv.cachedir)
         
         try:            
             nearestNeighbors = self._getKNearestNeighbors()

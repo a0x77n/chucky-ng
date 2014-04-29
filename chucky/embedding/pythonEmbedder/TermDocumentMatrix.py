@@ -49,4 +49,6 @@ class TermDocumentMatrix():
         dia = dia_matrix((idf, [0]), shape=(len(idf), len(idf)))
         m = (m.T * dia).T
         self.matrix = lil_matrix(m)
+        
+        
     

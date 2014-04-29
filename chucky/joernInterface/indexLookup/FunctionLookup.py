@@ -44,3 +44,11 @@ class FunctionLookup:
         return map(lambda x : Function(x[0], x[1]), result)
 
     
+    @staticmethod
+    def lookup_all_functions():
+        lucene_query = 'type:Function'
+        traversal = ''
+        result = jutils.lookup(lucene_query, traversal)
+        return map(lambda x : Function(x[0], x[1]), result)
+
+    

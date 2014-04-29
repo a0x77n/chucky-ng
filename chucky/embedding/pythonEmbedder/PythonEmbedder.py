@@ -9,7 +9,7 @@ class Embedder:
         
         featureArray = self._createFeatureArray(directory)
         termDocMatrix = self._createTermDocumentMatrix(featureArray)
-        # termDocMatrix.tfidf()
+        termDocMatrix.tfidf()
         self._outputInLIBSVMFormat(termDocMatrix, directory)
         
     def _createFeatureArray(self, directory):
