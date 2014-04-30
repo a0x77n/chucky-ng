@@ -1,5 +1,4 @@
-from nearestNeighbor.FunctionSelector import FunctionSelector
-from nearestNeighbor.APISymbolEmbedder import APISymbolEmbedder
+
 import os
 
 class GlobalAPIEmbedding():
@@ -18,8 +17,5 @@ class GlobalAPIEmbedding():
         return os.path.exists(self.embeddingFilename)
     
     def _createEmbedding(self):
+        os.system('apiEmbedder.py -d ' + self.embeddingdir)
         
-        entitySelector = FunctionSelector()
-        functions = entitySelector.selectAllFunctions()
-        embedder = APISymbolEmbedder(None, self.embeddingdir)
-        embedder.embed(functions)

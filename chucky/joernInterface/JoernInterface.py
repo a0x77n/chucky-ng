@@ -1,4 +1,7 @@
 from joern.all import JoernSteps
+import os
+
+CHUCKY_STEPS_DIR = os.path.join(os.path.dirname(__file__), 'joernsteps')
 
 class jutils:
     joern = JoernSteps()
@@ -6,6 +9,7 @@ class jutils:
     @staticmethod
     def connectToDatabase():
         jutils.joern.connectToDatabase()
+        jutils.joern.addStepsDir(CHUCKY_STEPS_DIR)
     
     @staticmethod
     def lookup(lucene_query, traversal = None, projection = None):
