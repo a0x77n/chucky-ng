@@ -1,5 +1,6 @@
 
 import os
+from joerntools.APIEmbedder import APIEmbedder
 
 class GlobalAPIEmbedding():
     def __init__(self, cachedir):
@@ -17,5 +18,7 @@ class GlobalAPIEmbedding():
         return os.path.exists(self.embeddingFilename)
     
     def _createEmbedding(self):
-        os.system('apiEmbedder.py -d ' + self.embeddingdir)
+        embedder = APIEmbedder()
+        embedder.setOutputDirectory(self.embeddingdir)
+        embedder.run()
         

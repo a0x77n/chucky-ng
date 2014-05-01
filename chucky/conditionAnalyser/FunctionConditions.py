@@ -1,7 +1,5 @@
 from joernInterface.JoernInterface import jutils
 
-import itertools
-
 class FunctionConditions:
     
     def __init__(self, obj):

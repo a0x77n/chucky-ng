@@ -1,8 +1,6 @@
 
-import subprocess
-import shlex
 import os.path
-
+from joerntools.KNN import KNN
 from joernInterface.nodes.Function import Function
 
 """
@@ -36,8 +34,6 @@ class NearestNeighborSelector:
 
         return self._nearestNeighbors(entity, self.k, allEntities)
     
-    # FIXME: knn.py offers a python-class so we don't 
-    # have to make a call via the shell here
     
     def _nearestNeighbors(self, entity, k, allEntities):
         
@@ -45,22 +41,20 @@ class NearestNeighborSelector:
         
         nodeId = entity.getId()
         
-        command = 'knn.py -k {n_neighbors} --dirname {bagdir} -l {limit}'
-        command = command.format(n_neighbors=k, bagdir=self.cachedir, limit=limitFilename)
-        args = shlex.split(command)
-        knn = subprocess.Popen(
-                args,
-                stdin=subprocess.PIPE,
-                stdout=subprocess.PIPE,
-                stderr=subprocess.PIPE)
-        neighbors = []
-        (stdout, stderr) = knn.communicate(str(nodeId))
-        returncode = knn.poll()
-        if returncode:
-            raise subprocess.CalledProcessError(returncode, command, stderr)
-        for neighbor in stdout.strip().split('\n'):
-            neighbors.append(Function(neighbor))
-        return neighbors
+        f = file(limitFilename, 'r')
+        limit = [l.rstrip() for l in f.readlines()]
+        f.close()
+        
+        knn = KNN()
+        knn.setEmbeddingDir(self.cachedir)
+        knn.setK(k)
+        knn.setLimitArray(limit)
+        knn.setNoCache(False)
+        knn.initialize()
+        
+        ids = knn.getNeighborsFor(str(nodeId))
+        return [Function(i) for i in ids]
+    
     
     def _createLimitFile(self, entities):
         filename = os.path.join(self.cachedir, 'limitfile')

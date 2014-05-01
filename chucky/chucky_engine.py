@@ -27,8 +27,8 @@ class ChuckyEngine():
         try:            
             nearestNeighbors = self._getKNearestNeighbors()
 
-            for n in nearestNeighbors:
-                print n
+            # for n in nearestNeighbors:
+            #    print n
             
             if nearestNeighbors == []:
                 self.logger.warning('Job skipped, no neighbors found')

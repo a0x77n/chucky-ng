@@ -5,7 +5,7 @@ from chucky_engine import ChuckyEngine
 
 import logging
 import argparse
-import os
+import os, sys
 
 DESCRIPTION = """Chucky analyzes functions for anomalies. To this end, the
 usage of symbols used by a function is analyzed by comparing the checks
@@ -131,10 +131,10 @@ class Chucky():
         numberOfJobs = len(jobs)
         
         for i, job in enumerate(jobs, 1):
-            print 'Job ({}/{}): {}'.format(
+            sys.stderr.write('Job ({}/{}): {}\n'.format(
                     i,
                     numberOfJobs,
-                    job)
+                    job))
             if self.args.interactive:
                 choice = raw_input('Run job ([yes]/no/quit)? ').lower()
                 if choice in ['n', 'no']:

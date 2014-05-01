@@ -1,7 +1,6 @@
 from embedding.SallyBasedEmbedder import SallyBasedEmbedder
 from embedding.SallyDataDirectoryCreator import SallyDataDirectoryCreator
 from nearestNeighbor.FunctionAPISymbols import FunctionAPISymbols
-from embedding.pythonEmbedder.PythonEmbedder import Embedder
 
 class APISymbolEmbedder:
     
@@ -10,8 +9,8 @@ class APISymbolEmbedder:
         self.outputdir = outputdir
                 
         self.dataDirCreator = SallyDataDirectoryCreator(self.outputdir, cachedir)
-        self.embedder = Embedder()
-        # self.embedder = SallyBasedEmbedder()
+        
+        self.embedder = SallyBasedEmbedder()
     
     def embed(self, functions):
                  
