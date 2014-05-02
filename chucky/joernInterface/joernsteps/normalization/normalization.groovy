@@ -3,8 +3,9 @@ Gremlin.defineStep('normalize', [Vertex, Pipe], { args, ret ->
     def normalizer = new ASTNormalizer();
     def handler;
     
-    handler = new DefaultHandler(true, true);
+    handler = new DefaultHandler(true, false);
     normalizer.addHandler('IncDec', handler);
+    handler = new DefaultHandler(true, true);
     normalizer.addHandler('CastTarget', handler);
     
     handler = new IdentifierHandler(args, ret);
