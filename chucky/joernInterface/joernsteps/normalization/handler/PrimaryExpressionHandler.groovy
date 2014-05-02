@@ -1,7 +1,7 @@
 class PrimaryExpressionHandler extends DefaultHandler {
 	
 	PrimaryExpressionHandler() {
-		super(true, true);
+		super(true, false);
 	}
 
 	String apply(node, children) {
