@@ -36,7 +36,7 @@ class ASTNormalizer {
 			}
 		}
 		expr = handler.apply(node, subexpr);
-		if (store && handler.store()) {
+		if (store && handler.store(expr)) {
 			//expressions.add([expr, node.type]);
 			expressions.add(expr);
 		}

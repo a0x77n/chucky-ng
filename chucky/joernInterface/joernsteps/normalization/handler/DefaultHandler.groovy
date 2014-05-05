@@ -21,7 +21,7 @@ class DefaultHandler implements Handler {
 		return prune;
 	}
 
-	boolean store() {
+	boolean store(String code) {
 		return store;
 	}    
 
