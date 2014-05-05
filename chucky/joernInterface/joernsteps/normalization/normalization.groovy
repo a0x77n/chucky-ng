@@ -8,7 +8,7 @@ Gremlin.defineStep('normalize', [Vertex, Pipe], { args, ret ->
     handler = new DefaultHandler(true, true);
     normalizer.addHandler('CastTarget', handler);
     
-    handler = new IdentifierHandler(args, ret);
+    handler = new IdentifierHandler(args, ret, ['NULL']);
     normalizer.addHandler('Identifier', handler);
     normalizer.addHandler('PtrMemberAccess', handler);
     normalizer.addHandler('MemberAccess', handler);

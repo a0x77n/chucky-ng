@@ -2,11 +2,13 @@ class IdentifierHandler extends DefaultHandler {
 
 	def args;
 	def ret;
+	def except;
     
-	IdentifierHandler(arguments, return_value) {
+	IdentifierHandler(arguments, return_value, excp) {
 		super(true, true);
 		args = arguments;
 		ret = return_value;
+		except = excp;
 	}
     
 	String apply(node, children) {
@@ -18,5 +20,10 @@ class IdentifierHandler extends DefaultHandler {
 			return node.code;
 		}
 	}
+
+	boolean store(String code) {
+		return store && !(code in except);
+	}    
+	
 
 }
