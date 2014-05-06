@@ -1,6 +1,6 @@
 
 from joernInterface.JoernInterface import jutils
-from joernInterface.nodes.Symbol import Symbol
+from joernInterface.nodes.Callee import Callee
 
 class CalleeLookup:
     
@@ -8,4 +8,4 @@ class CalleeLookup:
     def calleesByName(code):
         lucene_query = 'type:Callee AND code:"{}"'.format(code)
         symbols = jutils.lookup(lucene_query)
-        return map(lambda x : Symbol(x[0], x[1].get_properties()), symbols)
+        return map(lambda x : Callee(x[0], x[1].get_properties()), symbols)
