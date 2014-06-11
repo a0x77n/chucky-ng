@@ -1,6 +1,6 @@
 from embedding.SallyDataDirectoryCreator import SallyDataDirectoryCreator
 from embedding.SallyBasedEmbedder import SallyBasedEmbedder
-from conditionAnalyser.FunctionConditions import FunctionConditions
+from functionAnalyser.FunctionConditions import FunctionConditions
 
 
 class ConditionEmbedder:
@@ -16,13 +16,11 @@ class ConditionEmbedder:
         
         funcConditions = []
         for i, symbolUser in enumerate(functions, 1):
-            # self.logger.info('Processing %s (%s/%s).', symbolUser, i, len(functions))            
             
-            x = FunctionConditions(symbolUser)     
+            x = FunctionConditions(symbolUser)
             x.setSymbolName(symbolName)
             x.setSymbolType(symbolType)
             funcConditions.append(x)
         
         self.dataDirCreator.create(funcConditions)
         self.embedder.embed(self.outputdir, 'bin')
-        
