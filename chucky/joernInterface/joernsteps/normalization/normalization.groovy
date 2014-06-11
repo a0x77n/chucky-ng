@@ -1,4 +1,4 @@
-Gremlin.defineStep('normalize', [Vertex, Pipe], { args, ret ->
+Gremlin.defineStep('normalize', [Vertex, Pipe], { symbols ->
 
     def normalizer = new ASTNormalizer();
     def handler;
@@ -8,14 +8,14 @@ Gremlin.defineStep('normalize', [Vertex, Pipe], { args, ret ->
     handler = new DefaultHandler(true, true);
     normalizer.addHandler('CastTarget', handler);
     
-    handler = new IdentifierHandler(args, ret, ['NULL']);
+    handler = new IdentifierHandler(symbols, ['NULL']);
     normalizer.addHandler('Identifier', handler);
     normalizer.addHandler('PtrMemberAccess', handler);
     normalizer.addHandler('MemberAccess', handler);
     
     handler = new PassThroughHandler();
-    normalizer.addHandler('Argument', handler);
     normalizer.addHandler('Callee', handler);
+    normalizer.addHandler('Argument', handler);
     normalizer.addHandler('Condition', handler);
     
     handler = new ArgumentListHandler()
@@ -55,5 +55,12 @@ Gremlin.defineStep('normalize', [Vertex, Pipe], { args, ret ->
     
     handler = new ConditionalExpressionHandler()
     normalizer.addHandler('ConditionalExpression', handler);
+
+    handler = new UnaryOperationHandler(symbols)
+    normalizer.addHandler('UnaryOp', handler);
+
+    handler = new UnaryOperatorHandler()
+    normalizer.addHandler('UnaryOperator', handler);
+
 	_().transform{ normalizer.normalizeTree(it) }.scatter()
 });

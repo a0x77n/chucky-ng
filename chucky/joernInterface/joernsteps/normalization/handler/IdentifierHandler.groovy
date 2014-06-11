@@ -1,21 +1,17 @@
 class IdentifierHandler extends DefaultHandler {
 
-	def args;
-	def ret;
+	def symbols;
 	def except;
     
-	IdentifierHandler(arguments, return_value, excp) {
+	IdentifierHandler(symb, excp) {
 		super(true, true);
-		args = arguments;
-		ret = return_value;
+		symbols = symb
 		except = excp;
 	}
     
 	String apply(node, children) {
-		if (ret.contains(node.code)) {
-			return RET;
-		} else if (args.contains(node.code)) {
-			return ARG;
+		if (node.code in symbols) {
+			return symbols[node.code];
 		} else {
 			return node.code;
 		}

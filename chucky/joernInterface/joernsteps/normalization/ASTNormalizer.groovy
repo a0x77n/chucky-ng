@@ -32,12 +32,11 @@ class ASTNormalizer {
 		}
 		if (children) {
 			children.each() { child ->
-				subexpr.add(normalize(child, store && !handler.prune()));
+				subexpr.add(normalize(child, store && !handler.prune(node.code)));
 			}
 		}
 		expr = handler.apply(node, subexpr);
 		if (store && handler.store(expr)) {
-			//expressions.add([expr, node.type]);
 			expressions.add(expr);
 		}
 		return expr;

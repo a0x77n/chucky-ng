@@ -2,8 +2,6 @@ class DefaultHandler implements Handler {
 
 	static final String CMP = "\$CMP";
 	static final String NUM = "\$NUM";
-	static final String ARG = "\$ARG";
-	static final String RET = "\$RET";
 
 	boolean prune;
 	boolean store;
@@ -17,7 +15,7 @@ class DefaultHandler implements Handler {
 		return node.code;
 	};
 
-	boolean prune() {
+	boolean prune(String code) {
 		return prune;
 	}
 
