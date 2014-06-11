@@ -2,14 +2,14 @@ from joernInterface.JoernInterface import jutils
 from joernInterface.nodes.ASTNode import ASTNode
 from joernInterface.nodes.Identifier import Identifier
 
-class Parameter(ASTNode):
+class IdentifierDecl(ASTNode):
 
     def __init__(self, node_id, properties = None):
         ASTNode.__init__(self, node_id, properties) 
-        assert self.node_type == 'Parameter'
+        assert self.node_type == 'IdentifierDecl'
 
     def declaration_type(self):
-        traversal = "children().filter{it.type == 'ParameterType'}"
+        traversal = "children().filter{it.type == 'IdentifierDeclType'}"
         projection = ['code']
         result = jutils.raw_lookup(self.node_selection, traversal, projection)
         return result[0][0]

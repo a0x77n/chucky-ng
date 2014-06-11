@@ -1,7 +1,6 @@
 from joernInterface.nodes.Node import Node
 from joernInterface.JoernInterface import jutils
 
-
 class ASTNode(Node):
 
     def __init__(self, node_id, properties = None):
@@ -9,6 +8,11 @@ class ASTNode(Node):
 
     def __str__(self):
         return '{}'.format(self.code)
+
+    def statement(self):
+        traversal = 'statements()'
+        result = jutils.raw_lookup(self.node_selection, traversal = traversal)
+        return ASTNode(result[0][0], result[0][1].get_properties())
 
     def parent(self):
         traversal = 'parents()'

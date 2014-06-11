@@ -20,7 +20,7 @@ class Node(object):
         return self.node_id != other.node_id
 
     def __hash__(self):
-        return self.node_id
+        return hash(self.node_id)
 
     def load_properties(self):
         _, node = jutils.raw_lookup(self.node_selection)[0]

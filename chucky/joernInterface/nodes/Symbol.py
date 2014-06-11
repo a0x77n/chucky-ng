@@ -1,12 +1,12 @@
-from joernInterface.nodes.Node import Node
 from joernInterface.JoernInterface import jutils
+from joernInterface.nodes.Node import Node
 from joernInterface.nodes.Condition import Condition
-
 
 class Symbol(Node):
 
     def __init__(self, node_id, properties = None):
         Node.__init__(self, node_id, properties) 
+        assert self.node_type == 'Symbol'
 
     def __str__(self):
         return '{}'.format(self.code)
