@@ -1,14 +1,13 @@
+from ChuckyWorkingEnvironment import ChuckyWorkingEnvironment
 from joernInterface.JoernInterface import jutils
-import os
+from functionAnalyser.FunctionEmbedder import ConditionEmbedder as FunctionEmbedder
+from functionAnalyser.FunctionSelector import FunctionSelector
+from GlobalAPIEmbedding import GlobalAPIEmbedding
+from nearestNeighbor.NearestNeighborSelector import NearestNeighborSelector
 
+import os
 import logging
 import subprocess
-
-from nearestNeighbor.NearestNeighborSelector import NearestNeighborSelector
-from ChuckyWorkingEnvironment import ChuckyWorkingEnvironment
-from nearestNeighbor.FunctionSelector import FunctionSelector
-from conditionAnalyser.ConditionEmbedder import ConditionEmbedder
-from GlobalAPIEmbedding import GlobalAPIEmbedding
 
 class ChuckyEngine():
 
@@ -18,62 +17,75 @@ class ChuckyEngine():
 
         jutils.connectToDatabase()
 
+    """
+    Analyze the given job. This involves three steps:
+       1. Select a neighorhood
+       2. Embed the neighorhood
+       3. Find anomalies in the embedding
+    """
+
     def analyze(self, job):
 
         self.job = job
         self.workingEnv = ChuckyWorkingEnvironment(self.basedir, self.logger)
-        self.globalAPIEmbedding = GlobalAPIEmbedding(self.workingEnv.cachedir)
         
         try:            
-            nearestNeighbors = self._getKNearestNeighbors()
+            neighborhood = self._get_neighborhood()
 
-            # for n in nearestNeighbors:
-            #    print n
-            
-            if nearestNeighbors == []:
+            if neighborhood:
+
+                n = len(neighborhood)
+                self.logger.info('{} neighbors selected'.format(n))
+                for i, neighbor in enumerate(neighborhood, 1):
+                    self.logger.debug('{:>2}/{} {}'.format(i, n, neighbor))
+
+                self._embed_neighborhood(neighborhood)
+                result = self._anomaly_rating()
+                self._outputResult(result)
+
+            else:
                 self.logger.warning('Job skipped, no neighbors found')
-                self.workingEnv.destroy()
-                return
 
-            self._calculateCheckModels(nearestNeighbors)
-            result = self._anomaly_rating()
-            self._outputResult(result)
 
-        except subprocess.CalledProcessError as e:
+        except Exception as e:
             self.logger.error(e)
             self.logger.error('Do not clean up.')
+
         else:
             self.logger.debug('Cleaning up.')
             self.workingEnv.destroy()
 
     """
-    Determine the k nearest neighbors for the
-    current job.
+    Select neighbors (i.e functions or statements operating in a similar context)
     """
-    def _getKNearestNeighbors(self):
-        
-        symbol = self.job.getSymbol()
+
+    def _get_neighborhood(self):
+
+        selector = FunctionSelector(self.job)
+        functions = selector.select_all()
+        #return functions
+        GlobalAPIEmbedding(self.workingEnv.cachedir)
         self.knn = NearestNeighborSelector(self.workingEnv.basedir, self.workingEnv.bagdir)
         self.knn.setK(self.job.n_neighbors)
-    
-        entitySelector = FunctionSelector()
-        symbolUsers = entitySelector.selectFunctionsUsingSymbol(symbol)
-        return self.knn.getNearestNeighbors(self.job.function, symbolUsers)
-    
-    def _calculateCheckModels(self, symbolUsers):
-        
-        embedder = ConditionEmbedder(self.workingEnv.exprdir)
-        symbolName = self.job.getSymbolName()
-        symbolType = self.job.getSymbolType()
-        embedder.embed(symbolUsers, symbolName, symbolType)
+        return self.knn.getNearestNeighbors(self.job.target, functions)
 
+    """
+    Embed selected neighors.
+    """
+
+    def _embed_neighborhood(self, neighborhood):
+
+        embedder = FunctionEmbedder(self.workingEnv.exprdir)
+        embedder.embed(neighborhood, self.job.symbol_name, self.job.symbol_type)
 
     """
     Determine anomaly score.
     """
+
     def _anomaly_rating(self):
+
         dirname = os.path.dirname(os.path.dirname(__file__))
-        command = "echo %d | " % (self.job.function.node_id)
+        command = "echo %d | " % (self.job.target.node_id)
         command += 'python {dirname}/python/anomaly_score.py -d {dir}'
         command = command.format(
                 dirname = dirname,
@@ -84,11 +96,14 @@ class ChuckyEngine():
         for line in output.strip().split('\n'):
             score, feat = line.split(' ', 1)
             results.append((float(score), feat))
-            self.logger.debug('%+1.5f %s.', float(score), feat)
+
         return results
 
+    """
+    Print results
+    """
+
     def _outputResult(self, result):
-        
+
         score, feat = max(result)
-        print '{:< 6.5f}\t{:40}\t{:10}\t{}'.format(score, self.job.function, self.job.function.node_id, feat)
-    
+        print '{:< 6.5f}\t{:40s}\t{:10}\t{}'.format(score, self.job.function, self.job.function.node_id, feat)

@@ -30,9 +30,9 @@ class Chucky():
         self._config_logger()
         self._create_chucky_dir()
         self.job_generator = JobGenerator(
-                identifier = self.args.identifier,
-                identifier_type = self.args.identifier_type,
-                n_neighbors = self.args.n_neighbors)
+                self.args.identifier,
+                self.args.identifier_type)
+        self.job_generator.n_neighbors = self.args.n_neighbors
         self.job_generator.limit = self.args.limit
         self.engine = ChuckyEngine(self.args.chucky_dir)
 
@@ -64,16 +64,11 @@ class Chucky():
                 symbol embeddings and possible annotations of sources and
                 sinks.""")
         self.arg_parser.add_argument(
-                '--interactive',
-                action = 'store_true',
-                default = False,
-                help = """Enable interactive mode.""")
-        self.arg_parser.add_argument(
                 '-l', '--limit',
                 action = 'store',
                 default = None,
                 type = str,
-                help = """Limit analysis to functions with given name""")
+                help = """Limit analysis to functions with given id.""")
         
         group = self.arg_parser.add_mutually_exclusive_group()
         group.add_argument(
@@ -103,7 +98,7 @@ class Chucky():
         if not os.path.isdir(basedir):
             self.logger.debug('Creating directory %s.', os.path.abspath(basedir))
             os.makedirs(basedir)
-        self.logger.info('Base directory is %s.', os.path.abspath(basedir))
+        self.logger.debug('Base directory is %s.', os.path.abspath(basedir))
 
     
     def _config_logger(self):
@@ -111,15 +106,15 @@ class Chucky():
         self.logger.setLevel('DEBUG')
         console_handler = logging.StreamHandler()
         console_handler.setLevel(self.args.logging_level)
-        file_handler = logging.FileHandler('chucky.log', 'w+')
-        file_handler.setLevel('DEBUG')
+        #file_handler = logging.FileHandler('chucky.log', 'w+')
+        #file_handler.setLevel('DEBUG')
         #console_formatter = logging.Formatter('%(message)s')
         console_formatter = logging.Formatter('[%(levelname)s] %(message)s')
-        file_formatter = logging.Formatter('[%(levelname)s] %(message)s')
+        #file_formatter = logging.Formatter('[%(levelname)s] %(message)s')
         console_handler.setFormatter(console_formatter)
-        file_handler.setFormatter(file_formatter)
+        #file_handler.setFormatter(file_formatter)
         self.logger.addHandler(console_handler)
-        self.logger.addHandler(file_handler)
+        #self.logger.addHandler(file_handler)
 
     """
     Generates Jobs (list of ChuckyJobs) and asks
@@ -128,19 +123,10 @@ class Chucky():
 
     def execute(self):
         jobs = self.job_generator.generate()
-        numberOfJobs = len(jobs)
+        n = len(jobs)
         
         for i, job in enumerate(jobs, 1):
-            sys.stderr.write('Job ({}/{}): {}\n'.format(
-                    i,
-                    numberOfJobs,
-                    job))
-            if self.args.interactive:
-                choice = raw_input('Run job ([yes]/no/quit)? ').lower()
-                if choice in ['n', 'no']:
-                    continue
-                elif choice in ['q', 'quit']:
-                    return
+            self.logger.info('Job ({}/{}): {}'.format(i, n, job))
             self.engine.analyze(job)
 
 if __name__ == '__main__':
