@@ -51,8 +51,14 @@ class AnomalyScore(PipeTool):
             print '{:+6.5f} {}'.format(score, feat_string)
 
     def calculateCenterOfMass(self, index):
-        
-        X = scipy.sparse.vstack([self.emb.x[:index, :], self.emb.x[index+1:, :]])
+        A = self.emb.x[:index, :]
+        B = self.emb.x[index+1:, :]
+        if A.nnz == 0:
+            X = B
+        elif B.nnz == 0:
+            X = A
+        else:
+            X = scipy.sparse.vstack([A, B])
         return scipy.sparse.csr_matrix(X.mean(axis=0))
 
 if __name__ == '__main__':
