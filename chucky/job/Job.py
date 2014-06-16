@@ -1,58 +1,68 @@
+from settings import Defaults
 
-import logging
-
-from job.Symbol import Symbol
+DEFAULT_N = Defaults.N_NEIGHBORS
 
 class ChuckyJob(object):
     
-    # When implementing additional command-line flags, the
-    # constructor's parameter list is likely to become
-    # longer and longer.
-    # Suggested improvement: provide setters for each of the
-    # configurable fields and remove the constructor
-    
-    def __init__(self, function, symbol_name, symbol_decl_type, symbol_type, n_neighbors):
-        self.function = function
-        self.n_neighbors = n_neighbors
-        self.logger = logging.getLogger('chucky')
-        self._initializeSymbol(symbol_name, symbol_type, symbol_decl_type)
+    def __init__(self, target, symbol):
+        self.target = target
+        self.symbol = symbol
+        self.n_neighbors = DEFAULT_N
+
+    def __setattr__(self, name, value):
+        try:
+            if name == 'symbol':
+                if value.node_type in ['CallExpression', 'Parameter', 'IdentifierDecl']:
+                    object.__setattr__(self, name, value)
+                else:
+                    raise AttributeError()
+            else:
+                object.__setattr__(self, name, value)
+        except:
+            raise AttributeError()
         
-    def _initializeSymbol(self, name, aType, declType):
-        self.symbol = Symbol()
-        self.symbol.setName(name)
-        self.symbol.setType(aType)
-        self.symbol.setDeclType(declType)
-    
-    def getSymbol(self):
-        return self.symbol
-    
-    def getSymbolName(self):
-        return self.symbol.target_name
-    
-    def getSymbolType(self):
-        return self.symbol.target_type
-     
     def __eq__(self, other):
-        return self.symbol == other.symbol
-     
+        if self.target != other.target:
+            return False
+        if self.symbol_type != other.symbol_type:
+            return False
+        if self.symbol_name != other.symbol_name:
+            return False
+        if self.symbol_decl_type != other.symbol_decl_type:
+            return False
+        return True
+
     def __hash__(self):
-        return hash(self.symbol) ^ hash(self.function)
+        return hash(self.target) ^ hash(self.symbol_name)
     
     def __str__(self):
-        if self.symbol.target_decl_type:
-            s = '{} ({}) - {} {} [{}]'
-            s = s.format(
-                    self.function,
-                    self.function.node_id,
-                    self.symbol.target_decl_type,
-                    self.symbol.target_name,
-                    self.symbol.target_type)
-            return s
+        s = '{} ({}) - {} {} [{}]'
+        s = s.format(
+                self.target,
+                self.target.node_id,
+                self.symbol_decl_type or '_',
+                self.symbol_name,
+                self.symbol_type)
+        return s
+
+    @property
+    def function(self):
+        return self.target
+
+    @property
+    def symbol_type(self):
+        return self.symbol.node_type
+
+    @property
+    def symbol_name(self):
+        if self.symbol_type == 'CallExpression':
+            return self.symbol.callee().code
         else:
-            s = '{} ({}) - {} [{}]'
-            s = s.format(
-                    self.function,
-                    self.function.node_id,
-                    self.symbol.target_name,
-                    self.symbol.target_type)
-            return s
+            return self.symbol.identifier().code
+
+    @property
+    def symbol_decl_type(self):
+        if self.symbol_type == 'CallExpression':
+            return None
+        else:
+            return self.symbol.declaration_type()

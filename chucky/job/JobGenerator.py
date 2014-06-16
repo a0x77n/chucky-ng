@@ -1,13 +1,17 @@
+from settings import Defaults
+
 from job.Job import ChuckyJob
 from joernInterface.indexLookup.FunctionLookup import FunctionLookup
-from joernInterface.indexLookup.IdentifierLookup import IdentifierLookup
-from joernInterface.indexLookup.CalleeLookup import CalleeLookup
+from joernInterface.indexLookup.ParameterLookup import ParameterLookup
+from joernInterface.indexLookup.IdentifierDeclLookup import IdentifierDeclLookup
+from joernInterface.indexLookup.CallExpressionLookup import CallExpressionLookup
 import re
 
-
-PARAMETER = 'Parameter'
-VARIABLE = 'Variable'
-CALLEE = 'Callee'
+DEFAULT_N = Defaults.N_NEIGHBORS
+FUNCTION = Defaults.FUNCTION
+PARAMETER = Defaults.PARAMETER
+VARIABLE = Defaults.VARIABLE
+CALLEE = Defaults.CALLEE
 
 """
 Creates a list of jobs for Chucky Engine based
@@ -16,12 +20,10 @@ on user queries.
 
 class JobGenerator(object):
 
-    # Suggested improvement: see ChuckyJob
-    
-    def __init__(self, identifier, identifier_type, n_neighbors):
+    def __init__(self, identifier, identifier_type):
         self.identifier = identifier
         self.identifier_type = identifier_type
-        self.n_neighbors = n_neighbors
+        self.n_neighbors = DEFAULT_N
         self.limit = None
 
     """
@@ -33,81 +35,32 @@ class JobGenerator(object):
     
     def generate(self):
         configurations = []
-        if self.identifier_type == 'function':
+        if self.identifier_type == FUNCTION:
             functions = FunctionLookup.lookup_functions_by_name(self.identifier)
             for function in functions:
-                parameters = function.parameters()
-                parameters = map(lambda x : (x.code, x.declaration_type()), parameters)
-                parameters = set(parameters)
-                for parameter, parameter_type in parameters:
-                    configuration = ChuckyJob(
-                            function,
-                            parameter,
-                            parameter_type,
-                            PARAMETER,
-                            self.n_neighbors)
-                    configurations.append(configuration)
-                variables = function.variables()
-                variables = map(lambda x : (x.code, x.declaration_type()), variables)
-                variables = set(variables)
-                for variable, variable_type in variables:
-                    configuration = ChuckyJob(
-                            function,
-                            variable,
-                            variable_type,
-                            VARIABLE,
-                            self.n_neighbors)
-                    configurations.append(configuration)
-                callees = function.callees()
-                callees = map(lambda x : x.code, callees)
-                callees = set(callees)
-                for callee in callees:
-                    configuration = ChuckyJob(
-                            function,
-                            callee,
-                            None,
-                            CALLEE,
-                            self.n_neighbors)
-                    configurations.append(configuration)
-        elif self.identifier_type == 'parameter':
-            parameters = IdentifierLookup.lookup_parameter(self.identifier)
-            for parameter in parameters:
-                configuration = ChuckyJob(
-                        parameter.function(),
-                        parameter.code,
-                        parameter.declaration_type(),
-                        PARAMETER,
-                        self.n_neighbors)
-                configurations.append(configuration)
-        elif self.identifier_type == 'variable':
-            variables = IdentifierLookup.lookup_variable(self.identifier)
-            for variable in variables:
-                configuration = ChuckyJob(
-                        variable.function(),
-                        variable.code,
-                        variable.declaration_type(),
-                        VARIABLE,
-                        self.n_neighbors)
-                configurations.append(configuration)
-        elif self.identifier_type == 'callee':
-            callees = CalleeLookup.calleesByName(self.identifier)
-            for callee in callees:
-                configuration = ChuckyJob(
-                        callee.function(),
-                        callee.code,
-                        callee.function().name ,
-                        CALLEE,
-                        self.n_neighbors)
-                configurations.append(configuration)
+                parameters = function.function_parameters()
+                configurations += self._jobs_from_symbols(parameters)
+                variables = function.local_variables()
+                configurations += self._jobs_from_symbols(variables)
+                callees = function.function_calls()
+                configurations += self._jobs_from_symbols(callees)
+        elif self.identifier_type == PARAMETER:
+            parameters = ParameterLookup.lookup(self.identifier, function_id = self.limit)
+            configurations += self._jobs_from_symbols(parameters)
+        elif self.identifier_type == VARIABLE:
+            variables = IdentifierDeclLookup.lookup(self.identifier, function_id = self.limit)
+            configurations += self._jobs_from_symbols(variables)
+        elif self.identifier_type == CALLEE:
+            callees = CallExpressionLookup.lookup(self.identifier, function_id = self.limit)
+            configurations += self._jobs_from_symbols(callees)
 
-        
         configurations = list(set(configurations))
-        
-        if self.limit:
-            if self.limit.isdigit():
-                configurations = set([c for c in configurations if int(self.limit) == c.function.node_id])
-            else:
-                configurations = set([c for c in configurations if re.search(self.limit, c.function.name)])
-            configurations = list(configurations)
             
         return configurations
+        
+    def _jobs_from_symbols(self, symbols):
+        def f(x):
+            job = ChuckyJob(x.function(), x)
+            job.n_neighbors = self.n_neighbors
+            return job
+        return map(f, symbols)
