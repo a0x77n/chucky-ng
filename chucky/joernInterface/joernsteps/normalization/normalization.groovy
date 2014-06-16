@@ -5,7 +5,7 @@ Gremlin.defineStep('normalize', [Vertex, Pipe], { symbols ->
     
     handler = new DefaultHandler(true, false);
     normalizer.addHandler('IncDec', handler);
-    handler = new DefaultHandler(true, true);
+    //handler = new DefaultHandler(true, true);
     normalizer.addHandler('CastTarget', handler);
     
     handler = new IdentifierHandler(symbols, ['NULL']);

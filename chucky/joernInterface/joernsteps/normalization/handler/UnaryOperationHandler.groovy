@@ -17,7 +17,9 @@ class UnaryOperationHandler extends DefaultHandler {
 		}
 	};
 
+	/*
 	boolean prune(String code) {
 		return prune || !(code.startsWith('!'))
 	}
+	*/
 }
