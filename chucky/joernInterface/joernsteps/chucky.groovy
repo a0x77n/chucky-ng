@@ -42,3 +42,55 @@ Gremlin.defineStep('taintDownwards', [Vertex, Pipe], {
 	).fairMerge()
 	.dedup()
 });
+
+Gremlin.defineStep('forwardSlice', [Vertex, Pipe], { symbol ->
+    _()
+    .copySplit(
+        _(),
+        _().sideEffect{first = true}
+        .outE('REACHES', 'CONTROLS')
+        .filter{it.label == 'CONTROLS' || !first || it.var == symbol}
+        .inV()
+        .sideEffect{first = false}
+        .loop(4){it.loops < 3}{true}
+        .dedup()
+    ).fairMerge()
+    .dedup()
+});
+
+Gremlin.defineStep('backwardSlice', [Vertex, Pipe], { symbol ->
+    _()
+    .sideEffect{first = true}
+    .inE('REACHES', 'CONTROLS')
+    .filter{it.label == 'CONTROLS' || !first || it.var == symbol}
+    .outV()
+    .sideEffect{first = false}
+    .loop(4){it.loops < 3}{true}
+    .dedup()
+});
+
+Gremlin.defineStep('statementToSinks', [Vertex, Pipe], {symbol ->
+    _()
+    .sideEffect{first = true}
+    .outE('REACHES')
+    .filter{it.var == symbol || !first}
+    .sideEffect{v = it.var}
+    .sideEffect{first = false}
+    .inV()
+    .loop(5){it.loops < 3}{true}
+    .dedup()
+    .astNodes()
+    .filter{it.type in ['CallExpression', 'ReturnStatement']}
+    .ifThenElse{it.type == 'CallExpression'}
+        {
+        it.sideEffect{call = it}
+        .callToArguments()
+        .sideEffect{argNum = it.childNum}
+        .uses()
+        .filter{it.code == v}
+        .transform{call}
+        .callToCallee()
+        .transform{it.code + ":" + argNum}
+        }
+        {it.type}
+});
