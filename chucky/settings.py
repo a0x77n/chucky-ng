@@ -5,3 +5,5 @@ class Defaults(object):
     PARAMETER = 'parameter'
     VARIABLE = 'variable'
     CALLEE = 'callee'
+    SOURCE = 'source'
+    SINK = 'sink'
