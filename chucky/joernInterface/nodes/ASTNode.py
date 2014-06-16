@@ -10,9 +10,10 @@ class ASTNode(Node):
         return '{}'.format(self.code)
 
     def statement(self):
+        from joernInterface.nodes.Statement import Statement
         traversal = 'statements()'
         result = jutils.raw_lookup(self.node_selection, traversal = traversal)
-        return ASTNode(result[0][0], result[0][1].get_properties())
+        return Statement(result[0][0], result[0][1].get_properties())
 
     def parent(self):
         traversal = 'parents()'

@@ -1,6 +1,7 @@
 from joernInterface.JoernInterface import jutils
 from joernInterface.nodes.ASTNode import ASTNode
 from joernInterface.nodes.Identifier import Identifier
+from joernInterface.nodes.Symbol import Symbol
 
 class Parameter(ASTNode):
 
@@ -18,3 +19,8 @@ class Parameter(ASTNode):
         traversal = "children().filter{it.type == 'Identifier'}"
         result = jutils.raw_lookup(self.node_selection, traversal = traversal)
         return Identifier(result[0][0], result[0][1].get_properties())
+
+    def symbol(self):
+        traversal = "defines()"
+        result = jutils.raw_lookup(self.node_selection, traversal = traversal)
+        return Symbol(result[0][0], result[0][1].get_properties())
