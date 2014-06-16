@@ -2,7 +2,6 @@ from embedding.SallyDataDirectoryCreator import SallyDataDirectoryCreator
 from embedding.SallyBasedEmbedder import SallyBasedEmbedder
 from functionAnalyser.FunctionConditions import FunctionConditions
 
-
 class ConditionEmbedder:
     
     def __init__(self, outputdir):
