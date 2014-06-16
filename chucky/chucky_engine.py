@@ -1,13 +1,22 @@
+from settings import Defaults
 from ChuckyWorkingEnvironment import ChuckyWorkingEnvironment
 from joernInterface.JoernInterface import jutils
 from functionAnalyser.FunctionEmbedder import ConditionEmbedder as FunctionEmbedder
 from functionAnalyser.FunctionSelector import FunctionSelector
 from GlobalAPIEmbedding import GlobalAPIEmbedding
 from nearestNeighbor.NearestNeighborSelector import NearestNeighborSelector
+from sliceAnalyser.SliceEmbedder import ConditionEmbedder as SliceEmbedder
+from sliceAnalyser.SliceSelector import SliceSelector
+from sliceAnalyser.SliceFilter import SliceFilter
+
+from job.chucky_ng.Job import ChuckyJob as SlicingJob
 
 import os
 import logging
 import subprocess
+
+SOURCE = Defaults.SOURCE
+SINK = Defaults.SINK
 
 class ChuckyEngine():
 
@@ -19,7 +28,7 @@ class ChuckyEngine():
 
     """
     Analyze the given job. This involves three steps:
-       1. Select a neighorhood
+       1. Select a neighorhood (this depends on the type of the job)
        2. Embed the neighorhood
        3. Find anomalies in the embedding
     """
@@ -61,13 +70,23 @@ class ChuckyEngine():
 
     def _get_neighborhood(self):
 
-        selector = FunctionSelector(self.job)
-        functions = selector.select_all()
-        #return functions
-        GlobalAPIEmbedding(self.workingEnv.cachedir)
-        self.knn = NearestNeighborSelector(self.workingEnv.basedir, self.workingEnv.bagdir)
-        self.knn.setK(self.job.n_neighbors)
-        return self.knn.getNearestNeighbors(self.job.target, functions)
+        if type(self.job) is SlicingJob:
+            selector = SliceSelector(self.job)
+            slices = selector.select_all()
+            return slices
+            filter = SliceFilter(self.job)
+            if self.job.category == SINK:
+                return filter.filter_by_source(slices)
+            else:
+                return filter.filter_by_sink(slices)
+        else:
+            selector = FunctionSelector(self.job)
+            functions = selector.select_all()
+            #return functions
+            GlobalAPIEmbedding(self.workingEnv.cachedir)
+            self.knn = NearestNeighborSelector(self.workingEnv.basedir, self.workingEnv.bagdir)
+            self.knn.setK(self.job.n_neighbors)
+            return self.knn.getNearestNeighbors(self.job.target, functions)
 
     """
     Embed selected neighors.
@@ -75,8 +94,12 @@ class ChuckyEngine():
 
     def _embed_neighborhood(self, neighborhood):
 
-        embedder = FunctionEmbedder(self.workingEnv.exprdir)
-        embedder.embed(neighborhood, self.job.symbol_name, self.job.symbol_type)
+        if type(self.job) is SlicingJob:
+            embedder = SliceEmbedder(self.workingEnv.exprdir)
+            embedder.embed(neighborhood, self.job.category)
+        else:
+            embedder = FunctionEmbedder(self.workingEnv.exprdir)
+            embedder.embed(neighborhood, self.job.symbol_name, self.job.symbol_type)
 
     """
     Determine anomaly score.
