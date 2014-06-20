@@ -25,6 +25,6 @@ class ChuckyJob(_ChuckyJob):
             print e
             raise AttributeError(e)
 
-        @property
-        def function(self):
-            return self.target.function()
+    @property
+    def function(self):
+        return self.target.function()
