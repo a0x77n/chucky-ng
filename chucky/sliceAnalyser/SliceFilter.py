@@ -6,10 +6,13 @@ from joernInterface.indexLookup.ParameterLookup import ParameterLookup
 from joernInterface.indexLookup.IdentifierDeclLookup import IdentifierDeclLookup
 from joernInterface.indexLookup.CallExpressionLookup import CallExpressionLookup
 
+from collections import defaultdict as dict
+
 import logging
 
 SOURCE = Defaults.SOURCE
 SINK = Defaults.SINK
+NOSINK = 'nosink'
 
 class SliceFilter(object):
    
@@ -17,58 +20,67 @@ class SliceFilter(object):
         self.job = job
         self.logger = logging.getLogger('chucky')
 
-    #def __setattr__(self, name, value):
-    #    try:
-    #        if name == 'source':
-    #            if value.node_type in ['Statement']:
-    #                object.__setattr__(self, name, value)
-    #            else:
-    #                raise AttributeError()
-    #        elif name == 'sink':
-    #            if value.node_type in ['Statement']:
-    #                object.__setattr__(self, name, value)
-    #            else:
-    #                raise AttributeError()
-    #        else:
-    #            object.__setattr__(self, name, value)
-    #    except:
-    #        raise AttributeError()
-
-
-    def filter_by_sink(self, systems):
-        node_selection = self.job.target.node_selection
-        traversal = "statementToSinks('{}')".format(self.job.symbol_name)
-        command = '.'.join([node_selection, traversal])
-        accept = jutils.runGremlinCommands([command])
-        self.logger.debug("Filter by sink(s) ({})".format(', '.join(accept)))
-        results = []
-        for source, symbol in systems:
-            traversal = "statementToSinks('{}')".format(symbol)
-            command = '.'.join([source.node_selection, traversal])
-            sinks = jutils.runGremlinCommands([command])
-            if not accept and not sinks:
-                results.append((source, symbol))
-            else:
-                for sink in sinks:
-                    if sink in accept:
-                        #print 'Match', sink
-                        results.append((source, symbol))
-                        # one match suffices
-                        break
-        #print 'Done'
-        if len(results) > 4:
-            return results
-        return systems
-
-    def filter_by_source(self, systems):
-        return systems
-        #results = []
-        #for source, sink in systems:
-        #    results.append(sink)
-        #return list(set(results))
-
-    def _accepted_types(self):
-        if self.types:
-            return "[{}]".format(','.join(map(lambda x : "\'{}\'".format(x), self.types)))
+    def filter(self, systems):
+        if self.job.category == SOURCE:
+            return self._filter_by_sinks(systems)
         else:
-            return "[]"
+            return systems # no implemented yet
+
+    def _filter_by_sinks(self, systems):
+
+        accept = self._select_accepted_sinks()
+        self.logger.debug("Filter by sink(s) ({})".format(', '.join(accept)))
+        common_sinks = dict(set)
+        other_sinks = dict(set)
+
+        for source, symbol in systems:
+            sinks = self._select_sinks(source, symbol)
+            for sink in sinks:
+                if sink in accept:
+                    common_sinks[sink].add((source, symbol))
+                else:
+                    other_sinks[sink].add((source, symbol))
+            if not sinks:
+                if not accept:
+                    common_sinks[NOSINK].add((source, symbol))
+                else:
+                    other_sinks[NOSINK].add((source, symbol))
+        try:
+            result = set()
+            for sink in sorted(common_sinks, key = lambda x : len(common_sinks[x]), reverse = True):
+                if len(result) >= self.job.n_neighbors:
+                    break;
+                else:
+                    self.logger.debug('+ Selected sink {}, {} matching slices.'.format(sink, len(common_sinks[sink])))
+                    result.update(common_sinks[sink])
+                break
+            #for sink in sorted(other_sinks, key = lambda x : len(other_sinks[x]), reverse = True):
+            #    if len(result) >= self.job.n_neighbors:
+            #        break;
+            #    else:
+            #        self.logger.debug('- Selected sink {}, {} matching slices.'.format(sink, len(other_sinks[sink])))
+            #        result.update(other_sinks[sink])
+        except Exception, e:
+            self.logger.error(e)
+            return []
+        else:
+            if len(result) >= self.job.n_neighbors:
+                return list(result)
+            elif len(result) > 1:
+                return list(result)
+            else:
+                return []
+
+    def _select_accepted_sinks(self):
+        node_selection = self.job.target.node_selection
+        if self.job.symbol_type == 'CallExpression':
+            symbol = self.job.symbol.return_symbol()
+        else:
+            symbol = self.job.symbol_name
+        return self._select_sinks(self.job.target, symbol)
+
+    def _select_sinks(self, statement, symbol):
+        traversal = "statementToSinks('{}')".format(symbol)
+        command = '.'.join([statement.node_selection, traversal])
+        sinks = jutils.runGremlinCommands([command])
+        return sinks
