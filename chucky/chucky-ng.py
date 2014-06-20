@@ -133,7 +133,7 @@ class Chucky():
         n = len(jobs)
         
         for i, job in enumerate(jobs, 1):
-            self.logger.info('Job ({}/{}): {}'.format(i, n, job))
+            self.logger.info('Job ({}/{}): {} ({})'.format(i, n, job, job.function))
             self.engine.analyze(job)
 
 if __name__ == '__main__':
