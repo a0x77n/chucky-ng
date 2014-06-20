@@ -46,7 +46,10 @@ class ChuckyEngine():
                 n = len(neighborhood)
                 self.logger.info('{} neighbors selected'.format(n))
                 for i, neighbor in enumerate(neighborhood, 1):
-                    self.logger.debug('{:>2}/{} {}'.format(i, n, neighbor))
+                    if type(self.job) is SlicingJob:
+                        self.logger.debug('{:>2}/{} {} ({})'.format(i, n, neighbor, neighbor[0].function()))
+                    else:
+                        self.logger.debug('{:>2}/{} {}'.format(i, n, neighbor))
 
                 self._embed_neighborhood(neighborhood)
                 result = self._anomaly_rating()
@@ -59,7 +62,6 @@ class ChuckyEngine():
         except Exception as e:
             self.logger.error(e)
             self.logger.error('Do not clean up.')
-
         else:
             self.logger.debug('Cleaning up.')
             self.workingEnv.destroy()
@@ -73,12 +75,9 @@ class ChuckyEngine():
         if type(self.job) is SlicingJob:
             selector = SliceSelector(self.job)
             slices = selector.select_all()
-            return slices
+            #return slices
             filter = SliceFilter(self.job)
-            if self.job.category == SINK:
-                return filter.filter_by_source(slices)
-            else:
-                return filter.filter_by_sink(slices)
+            return filter.filter(slices)
         else:
             selector = FunctionSelector(self.job)
             functions = selector.select_all()
@@ -103,6 +102,7 @@ class ChuckyEngine():
 
     """
     Determine anomaly score.
+    TODO 
     """
 
     def _anomaly_rating(self):
@@ -119,6 +119,7 @@ class ChuckyEngine():
         for line in output.strip().split('\n'):
             score, feat = line.split(' ', 1)
             results.append((float(score), feat))
+            #self.logger.debug('{:< 6.5f}\t{}'.format(float(score), feat))
 
         return results
 
@@ -129,4 +130,5 @@ class ChuckyEngine():
     def _outputResult(self, result):
 
         score, feat = max(result)
+        self.logger.debug('{:< 6.5f}\t{}\t{}\t{}'.format(score, self.job.function, self.job.function.node_id, feat))
         print '{:< 6.5f}\t{:40s}\t{:10}\t{}'.format(score, self.job.function, self.job.function.node_id, feat)
