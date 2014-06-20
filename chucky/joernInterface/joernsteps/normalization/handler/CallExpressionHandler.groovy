@@ -1,7 +1,7 @@
 class CallExpressionHandler extends DefaultHandler {
 
 	CallExpressionHandler() {
-		super(false, true);
+		super(false, false);
 	}
 
 	String apply(node, children) {

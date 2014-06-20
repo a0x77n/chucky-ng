@@ -14,9 +14,11 @@ Gremlin.defineStep('normalize', [Vertex, Pipe], { symbols ->
     normalizer.addHandler('MemberAccess', handler);
     
     handler = new PassThroughHandler();
-    normalizer.addHandler('Callee', handler);
     normalizer.addHandler('Argument', handler);
     normalizer.addHandler('Condition', handler);
+
+    handler = new CalleeHandler();
+    normalizer.addHandler('Callee', handler);
     
     handler = new ArgumentListHandler()
     normalizer.addHandler('ArgumentList', handler);

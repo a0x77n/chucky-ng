@@ -1,7 +1,7 @@
 class CastExpressionHandler extends DefaultHandler {
 
 	CastExpressionHandler() {
-		super(false, true);
+		super(false, false);
 	}
 
 	String apply(node, children) {
